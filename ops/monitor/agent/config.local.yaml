@@ -1,0 +1,7 @@
+node_id: "local-node"
+listen: "0.0.0.0:9109"
+token: "test-token"
+disks:
+  - "/"
+services_allowlist: []
+gpu: "auto"

@@ -1,0 +1,30 @@
+# Monitor Agent 配置文件示例
+# 复制此文件到 /etc/monitor-agent/config.yaml 并修改相应配置
+
+# 节点唯一标识（必填）
+node_id: "srv-01"
+
+# 监听地址（默认：0.0.0.0:9109）
+listen: "0.0.0.0:9109"
+
+# 认证 Token（必填，建议使用随机生成的长字符串）
+# 生成方式: python3 -c "import secrets; print(secrets.token_urlsafe(32))"
+token: "REPLACE_WITH_RANDOM_TOKEN"
+
+# 监控的磁盘挂载点列表
+disks:
+  - "/"
+  # - "/data"
+  # - "/var/lib/docker"
+
+# 允许查询的 systemd 服务列表（可选，为空表示不监控服务）
+services_allowlist: []
+  # - "nginx.service"
+  # - "docker.service"
+  # - "sshd.service"
+
+# GPU 采集模式
+# - auto: 自动检测（推荐）
+# - nvidia: 强制使用 NVIDIA
+# - off: 禁用 GPU 监控
+gpu: "auto"
