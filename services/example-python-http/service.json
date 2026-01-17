@@ -1,0 +1,13 @@
+{
+  "name": "example-python-http",
+  "displayName": "Example Python HTTP",
+  "description": "Example service managed via NSSM (python -m http.server).",
+  "exe": "C:\\Windows\\System32\\cmd.exe",
+  "args": "/c \"python -m http.server 8080\"",
+  "workDir": "D:\\dhga\\server",
+  "stdout": "D:\\dhga\\server\\logs\\example-python-http\\stdout.log",
+  "stderr": "D:\\dhga\\server\\logs\\example-python-http\\stderr.log",
+  "start": "manual",
+  "env": {}
+}
+

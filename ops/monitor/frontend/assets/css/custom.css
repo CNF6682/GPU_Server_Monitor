@@ -1,0 +1,334 @@
+/**
+ * 监控系统自定义样式
+ */
+
+/* ============================================================================
+   CSS 变量定义
+   ============================================================================ */
+:root {
+  --monitor-success: #2fb344;
+  --monitor-danger: #d63939;
+  --monitor-warning: #f76707;
+  --monitor-info: #4299e1;
+  --monitor-muted: #868e96;
+  
+  /* 进度条颜色 */
+  --progress-low: #2fb344;
+  --progress-medium: #f59f00;
+  --progress-high: #f76707;
+  --progress-critical: #d63939;
+}
+
+/* ============================================================================
+   服务器卡片样式
+   ============================================================================ */
+.server-card {
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+  border: 1px solid rgba(0, 0, 0, 0.1);
+}
+
+.server-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.1);
+}
+
+.server-card .card-header {
+  border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+}
+
+.server-card .card-title {
+  font-weight: 600;
+  font-size: 1.1rem;
+}
+
+/* ============================================================================
+   状态指示器
+   ============================================================================ */
+.status-indicator {
+  display: inline-block;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  margin-right: 8px;
+  animation: pulse 2s infinite;
+}
+
+.status-indicator.online {
+  background-color: var(--monitor-success);
+  box-shadow: 0 0 0 rgba(47, 179, 68, 0.4);
+}
+
+.status-indicator.offline {
+  background-color: var(--monitor-danger);
+  box-shadow: 0 0 0 rgba(214, 57, 57, 0.4);
+  animation: none;
+}
+
+@keyframes pulse {
+  0% {
+    box-shadow: 0 0 0 0 rgba(47, 179, 68, 0.4);
+  }
+  70% {
+    box-shadow: 0 0 0 10px rgba(47, 179, 68, 0);
+  }
+  100% {
+    box-shadow: 0 0 0 0 rgba(47, 179, 68, 0);
+  }
+}
+
+/* ============================================================================
+   进度条样式
+   ============================================================================ */
+.metric-progress {
+  height: 8px;
+  border-radius: 4px;
+  background-color: #e9ecef;
+  overflow: hidden;
+}
+
+.metric-progress .progress-bar {
+  transition: width 0.5s ease;
+}
+
+.metric-progress .progress-bar.low {
+  background-color: var(--progress-low);
+}
+
+.metric-progress .progress-bar.medium {
+  background-color: var(--progress-medium);
+}
+
+.metric-progress .progress-bar.high {
+  background-color: var(--progress-high);
+}
+
+.metric-progress .progress-bar.critical {
+  background-color: var(--progress-critical);
+}
+
+/* ============================================================================
+   指标标签
+   ============================================================================ */
+.metric-label {
+  font-size: 0.75rem;
+  color: var(--monitor-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin-bottom: 4px;
+}
+
+.metric-value {
+  font-size: 0.9rem;
+  font-weight: 500;
+  color: #333;
+}
+
+/* ============================================================================
+   服务状态徽章
+   ============================================================================ */
+.service-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 4px 8px;
+  border-radius: 4px;
+  font-size: 0.75rem;
+  font-weight: 500;
+}
+
+.service-badge.active {
+  background-color: rgba(47, 179, 68, 0.1);
+  color: var(--monitor-success);
+}
+
+.service-badge.failed {
+  background-color: rgba(214, 57, 57, 0.1);
+  color: var(--monitor-danger);
+}
+
+.service-badge.inactive {
+  background-color: rgba(134, 142, 150, 0.1);
+  color: var(--monitor-muted);
+}
+
+/* ============================================================================
+   事件时间线
+   ============================================================================ */
+.event-timeline {
+  position: relative;
+  padding-left: 30px;
+}
+
+.event-timeline::before {
+  content: '';
+  position: absolute;
+  left: 10px;
+  top: 0;
+  bottom: 0;
+  width: 2px;
+  background-color: #e9ecef;
+}
+
+.event-item {
+  position: relative;
+  padding-bottom: 20px;
+}
+
+.event-item::before {
+  content: '';
+  position: absolute;
+  left: -25px;
+  top: 5px;
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background-color: var(--monitor-info);
+  border: 2px solid #fff;
+  box-shadow: 0 0 0 2px var(--monitor-info);
+}
+
+.event-item.server_down::before {
+  background-color: var(--monitor-danger);
+  box-shadow: 0 0 0 2px var(--monitor-danger);
+}
+
+.event-item.server_up::before {
+  background-color: var(--monitor-success);
+  box-shadow: 0 0 0 2px var(--monitor-success);
+}
+
+.event-item.service_failed::before {
+  background-color: var(--monitor-warning);
+  box-shadow: 0 0 0 2px var(--monitor-warning);
+}
+
+.event-item.service_recovered::before {
+  background-color: var(--monitor-success);
+  box-shadow: 0 0 0 2px var(--monitor-success);
+}
+
+.event-time {
+  font-size: 0.75rem;
+  color: var(--monitor-muted);
+}
+
+.event-message {
+  font-size: 0.9rem;
+  color: #333;
+}
+
+/* ============================================================================
+   表格样式
+   ============================================================================ */
+.servers-table th {
+  font-weight: 600;
+  text-transform: uppercase;
+  font-size: 0.75rem;
+  letter-spacing: 0.5px;
+  color: var(--monitor-muted);
+}
+
+.servers-table td {
+  vertical-align: middle;
+}
+
+/* ============================================================================
+   模态框样式
+   ============================================================================ */
+.modal-header {
+  border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+}
+
+.modal-footer {
+  border-top: 1px solid rgba(0, 0, 0, 0.05);
+}
+
+/* ============================================================================
+   加载状态
+   ============================================================================ */
+.loading-spinner {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 40px;
+}
+
+.loading-spinner::after {
+  content: '';
+  width: 40px;
+  height: 40px;
+  border: 4px solid #e9ecef;
+  border-top-color: var(--monitor-info);
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* ============================================================================
+   空状态
+   ============================================================================ */
+.empty-state {
+  text-align: center;
+  padding: 60px 20px;
+  color: var(--monitor-muted);
+}
+
+.empty-state svg {
+  width: 64px;
+  height: 64px;
+  margin-bottom: 16px;
+  opacity: 0.5;
+}
+
+.empty-state h3 {
+  font-size: 1.25rem;
+  margin-bottom: 8px;
+  color: #333;
+}
+
+.empty-state p {
+  margin-bottom: 20px;
+}
+
+/* ============================================================================
+   图表容器
+   ============================================================================ */
+.chart-container {
+  position: relative;
+  height: 300px;
+  width: 100%;
+}
+
+/* ============================================================================
+   时间范围选择器
+   ============================================================================ */
+.time-range-selector {
+  display: flex;
+  gap: 8px;
+}
+
+.time-range-selector .btn {
+  padding: 4px 12px;
+  font-size: 0.8rem;
+}
+
+/* ============================================================================
+   响应式适配
+   ============================================================================ */
+@media (max-width: 768px) {
+  .server-card .card-body {
+    padding: 1rem;
+  }
+  
+  .metric-label {
+    font-size: 0.7rem;
+  }
+  
+  .metric-value {
+    font-size: 0.8rem;
+  }
+}

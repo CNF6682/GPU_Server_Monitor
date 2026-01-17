@@ -1,0 +1,214 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="服务器详情 - 查看服务器详细指标和历史趋势">
+    <title>服务器详情 - 监控系统</title>
+
+    <!-- Tabler CSS (CDN) -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/core@1.0.0-beta17/dist/css/tabler.min.css">
+    <!-- Tabler Icons -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@2.44.0/tabler-icons.min.css">
+    <!-- Custom CSS -->
+    <link rel="stylesheet" href="assets/css/custom.css">
+</head>
+
+<body class="theme-light">
+    <div class="page">
+        <!-- 侧边栏 -->
+        <aside class="navbar navbar-vertical navbar-expand-lg navbar-dark">
+            <div class="container-fluid">
+                <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#sidebar-menu">
+                    <span class="navbar-toggler-icon"></span>
+                </button>
+                <h1 class="navbar-brand navbar-brand-autodark">
+                    <a href="index.html">
+                        <i class="ti ti-server me-2"></i>
+                        服务器监控
+                    </a>
+                </h1>
+                <div class="collapse navbar-collapse" id="sidebar-menu">
+                    <ul class="navbar-nav pt-lg-3">
+                        <li class="nav-item">
+                            <a class="nav-link" href="index.html">
+                                <span class="nav-link-icon d-md-none d-lg-inline-block">
+                                    <i class="ti ti-dashboard"></i>
+                                </span>
+                                <span class="nav-link-title">概览</span>
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="servers-manage.html">
+                                <span class="nav-link-icon d-md-none d-lg-inline-block">
+                                    <i class="ti ti-settings"></i>
+                                </span>
+                                <span class="nav-link-title">服务器管理</span>
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="events.html">
+                                <span class="nav-link-icon d-md-none d-lg-inline-block">
+                                    <i class="ti ti-bell"></i>
+                                </span>
+                                <span class="nav-link-title">事件</span>
+                            </a>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+        </aside>
+
+        <!-- 主内容区 -->
+        <div class="page-wrapper">
+            <!-- 页头 -->
+            <div class="page-header d-print-none">
+                <div class="container-xl">
+                    <div class="row align-items-center">
+                        <div class="col-auto">
+                            <a href="index.html" class="btn btn-ghost-secondary btn-sm mb-2">
+                                <i class="ti ti-arrow-left me-1"></i>返回概览
+                            </a>
+                            <h2 class="page-title" id="server-name">加载中...</h2>
+                        </div>
+                        <div class="col-auto ms-auto">
+                            <span id="status-badge" class="badge badge-lg">
+                                <span class="status-indicator"></span>
+                                --
+                            </span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 页面内容 -->
+            <div class="page-body">
+                <div class="container-xl">
+                    <!-- 基本信息卡片 -->
+                    <div class="row row-deck row-cards mb-4">
+                        <div class="col-md-6 col-lg-3">
+                            <div class="card">
+                                <div class="card-body">
+                                    <div class="d-flex align-items-center">
+                                        <div class="subheader">CPU 使用率</div>
+                                    </div>
+                                    <div class="h1 mb-0" id="current-cpu">-</div>
+                                    <div class="metric-progress mt-2">
+                                        <div class="progress-bar" id="cpu-progress" style="width: 0%"></div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-6 col-lg-3">
+                            <div class="card">
+                                <div class="card-body">
+                                    <div class="d-flex align-items-center">
+                                        <div class="subheader">磁盘使用</div>
+                                    </div>
+                                    <div class="h1 mb-0" id="current-disk">-</div>
+                                    <div class="small text-muted" id="disk-detail">-</div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-6 col-lg-3">
+                            <div class="card">
+                                <div class="card-body">
+                                    <div class="d-flex align-items-center">
+                                        <div class="subheader">GPU 使用率</div>
+                                    </div>
+                                    <div class="h1 mb-0" id="current-gpu">-</div>
+                                    <div class="small text-muted" id="gpu-detail">-</div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-6 col-lg-3">
+                            <div class="card">
+                                <div class="card-body">
+                                    <div class="d-flex align-items-center">
+                                        <div class="subheader">最后更新</div>
+                                    </div>
+                                    <div class="h3 mb-0" id="last-update">-</div>
+                                    <div class="small text-muted" id="server-info">-</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 图表区域 -->
+                    <div class="row row-deck row-cards mb-4">
+                        <div class="col-12">
+                            <div class="card">
+                                <div class="card-header">
+                                    <h3 class="card-title">历史趋势</h3>
+                                    <div class="ms-auto d-flex align-items-center gap-2">
+                                        <!-- 指标选择 -->
+                                        <select class="form-select form-select-sm" id="metric-selector"
+                                            style="width: 150px;">
+                                            <option value="cpu_pct">CPU 使用率</option>
+                                            <option value="disk_used_pct">磁盘使用率</option>
+                                            <option value="gpu_util_pct">GPU 使用率</option>
+                                        </select>
+                                        <!-- 时间范围选择 -->
+                                        <div class="btn-group time-range-selector" role="group">
+                                            <button type="button" class="btn btn-sm" data-range="1">1小时</button>
+                                            <button type="button" class="btn btn-sm" data-range="6">6小时</button>
+                                            <button type="button" class="btn btn-sm btn-primary"
+                                                data-range="24">24小时</button>
+                                            <button type="button" class="btn btn-sm" data-range="168">7天</button>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="card-body">
+                                    <div class="chart-container" id="timeseries-chart"></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 服务状态 -->
+                    <div class="row row-deck row-cards">
+                        <div class="col-12">
+                            <div class="card">
+                                <div class="card-header">
+                                    <h3 class="card-title">
+                                        <i class="ti ti-apps me-2"></i>服务状态
+                                    </h3>
+                                </div>
+                                <div class="card-body" id="services-list">
+                                    <div class="text-muted text-center py-4">
+                                        加载中...
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 页脚 -->
+            <footer class="footer footer-transparent d-print-none">
+                <div class="container-xl">
+                    <div class="row text-center align-items-center">
+                        <div class="col-12">
+                            <span class="text-muted">服务器监控系统 &copy; 2026</span>
+                        </div>
+                    </div>
+                </div>
+            </footer>
+        </div>
+    </div>
+
+    <!-- Tabler JS (CDN) -->
+    <script src="https://cdn.jsdelivr.net/npm/@tabler/core@1.0.0-beta17/dist/js/tabler.min.js"></script>
+    <!-- ECharts (CDN) -->
+    <script src="https://cdn.jsdelivr.net/npm/echarts@5.4.3/dist/echarts.min.js"></script>
+    <!-- Config -->
+    <script src="config.js"></script>
+    <!-- API Client -->
+    <script src="assets/js/api-client.js"></script>
+    <!-- Server Detail Logic -->
+    <script src="assets/js/server-detail.js"></script>
+</body>
+
+</html>

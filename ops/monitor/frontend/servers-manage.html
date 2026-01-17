@@ -1,0 +1,241 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="服务器管理 - 添加、编辑、删除监控服务器">
+    <title>服务器管理 - 监控系统</title>
+
+    <!-- Tabler CSS (CDN) -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/core@1.0.0-beta17/dist/css/tabler.min.css">
+    <!-- Tabler Icons -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@2.44.0/tabler-icons.min.css">
+    <!-- Custom CSS -->
+    <link rel="stylesheet" href="assets/css/custom.css">
+</head>
+
+<body class="theme-light">
+    <div class="page">
+        <!-- 侧边栏 -->
+        <aside class="navbar navbar-vertical navbar-expand-lg navbar-dark">
+            <div class="container-fluid">
+                <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#sidebar-menu">
+                    <span class="navbar-toggler-icon"></span>
+                </button>
+                <h1 class="navbar-brand navbar-brand-autodark">
+                    <a href="index.html">
+                        <i class="ti ti-server me-2"></i>
+                        服务器监控
+                    </a>
+                </h1>
+                <div class="collapse navbar-collapse" id="sidebar-menu">
+                    <ul class="navbar-nav pt-lg-3">
+                        <li class="nav-item">
+                            <a class="nav-link" href="index.html">
+                                <span class="nav-link-icon d-md-none d-lg-inline-block">
+                                    <i class="ti ti-dashboard"></i>
+                                </span>
+                                <span class="nav-link-title">概览</span>
+                            </a>
+                        </li>
+                        <li class="nav-item active">
+                            <a class="nav-link" href="servers-manage.html">
+                                <span class="nav-link-icon d-md-none d-lg-inline-block">
+                                    <i class="ti ti-settings"></i>
+                                </span>
+                                <span class="nav-link-title">服务器管理</span>
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="events.html">
+                                <span class="nav-link-icon d-md-none d-lg-inline-block">
+                                    <i class="ti ti-bell"></i>
+                                </span>
+                                <span class="nav-link-title">事件</span>
+                            </a>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+        </aside>
+
+        <!-- 主内容区 -->
+        <div class="page-wrapper">
+            <!-- 页头 -->
+            <div class="page-header d-print-none">
+                <div class="container-xl">
+                    <div class="page-pretitle">管理</div>
+                    <div class="row align-items-center">
+                        <div class="col-auto">
+                            <h2 class="page-title">服务器管理</h2>
+                        </div>
+                        <div class="col-auto ms-auto">
+                            <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#server-modal"
+                                onclick="openAddModal()">
+                                <i class="ti ti-plus me-1"></i>添加服务器
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 页面内容 -->
+            <div class="page-body">
+                <div class="container-xl">
+                    <div class="card">
+                        <div class="table-responsive">
+                            <table class="table table-vcenter card-table servers-table">
+                                <thead>
+                                    <tr>
+                                        <th>名称</th>
+                                        <th>地址</th>
+                                        <th>状态</th>
+                                        <th>最后在线</th>
+                                        <th>监控服务</th>
+                                        <th class="w-1">操作</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="servers-tbody">
+                                    <tr>
+                                        <td colspan="6" class="text-center py-4 text-muted">
+                                            加载中...
+                                        </td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 页脚 -->
+            <footer class="footer footer-transparent d-print-none">
+                <div class="container-xl">
+                    <div class="row text-center align-items-center">
+                        <div class="col-12">
+                            <span class="text-muted">服务器监控系统 &copy; 2026</span>
+                        </div>
+                    </div>
+                </div>
+            </footer>
+        </div>
+    </div>
+
+    <!-- 服务器编辑模态框 -->
+    <div class="modal modal-blur fade" id="server-modal" tabindex="-1" role="dialog" aria-hidden="true">
+        <div class="modal-dialog modal-lg" role="document">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="modal-title">添加服务器</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="server-form">
+                        <input type="hidden" id="server-id">
+
+                        <div class="row mb-3">
+                            <div class="col-md-6">
+                                <label class="form-label required">服务器名称</label>
+                                <input type="text" class="form-control" id="server-name" required
+                                    placeholder="例: srv-01">
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label required">主机地址</label>
+                                <input type="text" class="form-control" id="server-host" required
+                                    placeholder="例: 10.0.0.101">
+                            </div>
+                        </div>
+
+                        <div class="row mb-3">
+                            <div class="col-md-6">
+                                <label class="form-label">Agent 端口</label>
+                                <input type="number" class="form-control" id="server-port" value="9109" min="1"
+                                    max="65535">
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label required">Token</label>
+                                <div class="input-group">
+                                    <input type="text" class="form-control" id="server-token" required
+                                        placeholder="Agent 认证 Token">
+                                    <button class="btn btn-outline-secondary" type="button" onclick="generateToken()">
+                                        <i class="ti ti-refresh"></i> 生成
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label">监控服务（每行一个）</label>
+                            <textarea class="form-control" id="server-services" rows="3"
+                                placeholder="nginx.service&#10;docker.service"></textarea>
+                            <div class="form-hint">可选，留空则不监控服务状态</div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-check">
+                                <input type="checkbox" class="form-check-input" id="server-enabled" checked>
+                                <span class="form-check-label">启用监控</span>
+                            </label>
+                        </div>
+
+                        <!-- 服务发现区域 -->
+                        <div class="mb-3" id="discover-section" style="display: none;">
+                            <div class="card bg-light">
+                                <div class="card-body">
+                                    <div class="d-flex justify-content-between align-items-center mb-3">
+                                        <h4 class="card-title mb-0">服务发现</h4>
+                                        <button type="button" class="btn btn-sm btn-outline-primary"
+                                            onclick="discoverServices()">
+                                            <i class="ti ti-search me-1"></i>发现服务
+                                        </button>
+                                    </div>
+                                    <div id="discovered-services">
+                                        <span class="text-muted">点击"发现服务"按钮获取可监控的服务列表</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-ghost-secondary" data-bs-dismiss="modal">取消</button>
+                    <button type="button" class="btn btn-primary" onclick="saveServer()">
+                        <i class="ti ti-device-floppy me-1"></i>保存
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 删除确认模态框 -->
+    <div class="modal modal-blur fade" id="delete-modal" tabindex="-1" role="dialog" aria-hidden="true">
+        <div class="modal-dialog modal-sm" role="document">
+            <div class="modal-content">
+                <div class="modal-status bg-danger"></div>
+                <div class="modal-body text-center py-4">
+                    <i class="ti ti-alert-triangle icon text-danger icon-lg mb-3"></i>
+                    <h3>确认删除？</h3>
+                    <p class="text-muted">删除后将停止监控该服务器，历史数据将被保留。</p>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-ghost-secondary" data-bs-dismiss="modal">取消</button>
+                    <button type="button" class="btn btn-danger" id="confirm-delete-btn">
+                        <i class="ti ti-trash me-1"></i>删除
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Tabler JS (CDN) -->
+    <script src="https://cdn.jsdelivr.net/npm/@tabler/core@1.0.0-beta17/dist/js/tabler.min.js"></script>
+    <!-- Config -->
+    <script src="config.js"></script>
+    <!-- API Client -->
+    <script src="assets/js/api-client.js"></script>
+    <!-- Servers Manage Logic -->
+    <script src="assets/js/servers-manage.js"></script>
+</body>
+
+</html>

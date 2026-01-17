@@ -1,0 +1,13 @@
+{
+  "name": "monitor-frontend",
+  "displayName": "Monitor Frontend (Static)",
+  "description": "Static web UI for ops/monitor. Served by python -m http.server.",
+  "exe": "C:\\Windows\\System32\\cmd.exe",
+  "args": "/c \"python -m http.server 8090\"",
+  "workDir": "D:\\dhga\\server\\ops\\monitor\\frontend",
+  "stdout": "D:\\dhga\\server\\logs\\monitor-frontend\\stdout.log",
+  "stderr": "D:\\dhga\\server\\logs\\monitor-frontend\\stderr.log",
+  "start": "manual",
+  "env": {}
+}
+

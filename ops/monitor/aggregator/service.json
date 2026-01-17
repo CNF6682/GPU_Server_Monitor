@@ -1,0 +1,19 @@
+{
+  "name": "MonitorAggregator",
+  "displayName": "Monitor Aggregator",
+  "description": "Server monitoring aggregator and API service - 采集、聚合、API 服务",
+  "exe": "C:\\Python311\\python.exe",
+  "args": [
+    "-m",
+    "monitor_aggregator.main"
+  ],
+  "workDir": "d:\\dhga\\server\\ops\\monitor\\aggregator",
+  "env": {
+    "PYTHONPATH": "d:\\dhga\\server\\ops\\monitor\\aggregator",
+    "MONITOR_CONFIG_PATH": "d:\\dhga\\server\\ops\\monitor\\config.yaml"
+  },
+  "stdout": "d:\\dhga\\server\\logs\\monitor-aggregator\\stdout.log",
+  "stderr": "d:\\dhga\\server\\logs\\monitor-aggregator\\stderr.log",
+  "autoRestart": true,
+  "restartDelay": 5000
+}

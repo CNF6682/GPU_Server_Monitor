@@ -1,0 +1,22 @@
+# Monitor Aggregator 依赖
+# Python 3.8+
+
+# Web 框架
+fastapi>=0.104.0
+uvicorn[standard]>=0.24.0
+
+# HTTP 客户端（异步）
+httpx>=0.25.0
+
+# 配置和验证
+pyyaml>=6.0
+pydantic>=2.0.0
+pydantic-settings>=2.0.0
+
+# 日志
+python-json-logger>=2.0.0
+
+# 测试（可选）
+pytest>=7.0.0
+pytest-asyncio>=0.21.0
+httpx  # 测试客户端
