@@ -102,6 +102,40 @@ def load_config(config_path: Optional[str] = None) -> AppConfig:
         with open(config_file, "r", encoding="utf-8") as f:
             raw_config = yaml.safe_load(f)
             if raw_config:
+                # Normalize relative paths so the app doesn't depend on CWD.
+                # Convention: config.yaml lives at <repo>/ops/monitor/config.yaml,
+                # and paths inside config.yaml are repo-root-relative.
+                try:
+                    resolved_config = config_file.resolve()
+                    # Expected layout: <repo>/ops/monitor/config.yaml
+                    if resolved_config.parent.name == "monitor" and resolved_config.parent.parent.name == "ops":
+                        repo_root = resolved_config.parents[2]
+                    else:
+                        # Fallback: treat paths as relative to the config file directory.
+                        repo_root = resolved_config.parent
+                except Exception:
+                    repo_root = None
+
+                def _resolve_repo_path(value: Optional[str]) -> Optional[str]:
+                    if not value or not repo_root:
+                        return value
+                    path = Path(value)
+                    if path.is_absolute():
+                        return str(path)
+                    return str((repo_root / path).resolve())
+
+                raw_config.setdefault("database", {})
+                raw_config["database"]["path"] = _resolve_repo_path(raw_config["database"].get("path"))
+
+                raw_config.setdefault("frontend", {})
+                raw_config["frontend"]["path"] = _resolve_repo_path(raw_config["frontend"].get("path"))
+
+                raw_config.setdefault("backup", {})
+                raw_config["backup"]["path"] = _resolve_repo_path(raw_config["backup"].get("path"))
+
+                raw_config.setdefault("logging", {})
+                raw_config["logging"]["file"] = _resolve_repo_path(raw_config["logging"].get("file"))
+
                 return AppConfig(**raw_config)
     
     # 配置文件不存在时使用默认配置

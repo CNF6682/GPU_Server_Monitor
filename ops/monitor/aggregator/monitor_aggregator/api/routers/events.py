@@ -15,7 +15,7 @@ from ..dependencies import get_database
 router = APIRouter(prefix="/api/events", tags=["events"])
 
 
-@router.get("/", response_model=List[EventResponse])
+@router.get("", response_model=List[EventResponse])
 async def list_events(
     limit: int = Query(200, ge=1, le=1000, description="返回数量限制"),
     db: Database = Depends(get_database)

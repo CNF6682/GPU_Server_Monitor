@@ -34,7 +34,7 @@ def parse_services(services_json: Optional[str]) -> List[str]:
         return []
 
 
-@router.get("/", response_model=List[ServerResponse])
+@router.get("", response_model=List[ServerResponse])
 async def list_servers(db: Database = Depends(get_database)):
     """
     获取所有服务器及最新状态
@@ -91,7 +91,7 @@ async def get_server(server_id: int, db: Database = Depends(get_database)):
     )
 
 
-@router.post("/", response_model=dict, dependencies=[Depends(verify_admin_token)])
+@router.post("", response_model=dict, dependencies=[Depends(verify_admin_token)])
 async def create_server(data: ServerCreate, db: Database = Depends(get_database)):
     """
     添加服务器
