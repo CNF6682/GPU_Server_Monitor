@@ -132,7 +132,13 @@ function openAddModal() {
  * 打开编辑模态框
  */
 async function openEditModal(serverId) {
-  const server = servers.find(s => s.id === serverId);
+  // 优先使用最新详情（包含 token），若失败回退本地缓存
+  let server = servers.find(s => s.id === serverId);
+  try {
+    server = await api.getServer(serverId);
+  } catch (err) {
+    console.warn('Failed to fetch server detail, fallback to cached list:', err);
+  }
   if (!server) return;
 
   editingServerId = serverId;
@@ -141,8 +147,9 @@ async function openEditModal(serverId) {
   document.getElementById('server-name').value = server.name;
   document.getElementById('server-host').value = server.host;
   document.getElementById('server-port').value = server.agent_port;
-  document.getElementById('server-token').value = server.token;
-  document.getElementById('server-enabled').checked = server.enabled === 1;
+  document.getElementById('server-token').value = server.token || '';
+  // 后端返回可能是 bool 或 0/1，统一强制为 true/false，默认启用
+  document.getElementById('server-enabled').checked = server.enabled === undefined ? true : !!server.enabled;
 
   // 解析服务列表
   const services = server.services ? JSON.parse(server.services) : [];

@@ -81,6 +81,7 @@ class ServerResponse(BaseModel):
     name: str
     host: str
     agent_port: int = 9109
+    token: Optional[str] = None  # 用于前端编辑时回填
     enabled: bool = True
     online: bool = False
     last_seen_at: Optional[str] = None

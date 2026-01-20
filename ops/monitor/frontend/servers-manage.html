@@ -180,12 +180,97 @@
                             <div class="form-hint">可选，留空则不监控服务状态</div>
                         </div>
 
-                        <div class="mb-3">
-                            </button>
+                        <div class="row mb-3">
+                            <div class="col-md-6">
+                                <label class="form-label">启用</label>
+                                <div class="form-check form-switch">
+                                    <input class="form-check-input" type="checkbox" id="server-enabled" checked>
+                                    <label class="form-check-label" for="server-enabled">启用该服务器的采集</label>
+                                </div>
+                            </div>
                         </div>
+
+                        <!-- 服务发现 -->
+                        <div class="card mb-3" id="discover-section" style="display: none;">
+                            <div class="card-header">
+                                <h3 class="card-title">服务发现</h3>
+                                <div class="card-actions">
+                                    <button type="button" class="btn btn-sm btn-outline-primary" onclick="discoverServices()">
+                                        <i class="ti ti-search me-1"></i>发现服务
+                                    </button>
+                                </div>
+                            </div>
+                            <div class="card-body" id="discovered-services">
+                                <span class="text-muted">点击"发现服务"按钮获取可监控的服务列表</span>
+                            </div>
+                        </div>
+
+                        <!-- 代理配置 -->
+                        <div class="card mb-3">
+                            <div class="card-header">
+                                <h3 class="card-title"><i class="ti ti-proxy me-2"></i>代理转发配置（SSH 隧道）</h3>
+                            </div>
+                            <div class="card-body">
+                                <div class="row g-3">
+                                    <div class="col-md-3">
+                                        <div class="form-check form-switch">
+                                            <input class="form-check-input" type="checkbox" id="proxy-enabled">
+                                            <label class="form-check-label" for="proxy-enabled">启用代理转发</label>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-3">
+                                        <label class="form-label">Agent 本地端口</label>
+                                        <input type="number" class="form-control" id="proxy-listen-port" min="1" max="65535" value="8080">
+                                        <div class="form-hint">Linux 端监听 (127.0.0.1)</div>
+                                    </div>
+                                    <div class="col-md-3">
+                                        <label class="form-label">中心代理端口</label>
+                                        <input type="number" class="form-control" id="proxy-center-port" min="1" max="65535" value="7879">
+                                        <div class="form-hint">Windows 端代理 (127.0.0.1)</div>
+                                    </div>
+                                    <div class="col-md-3">
+                                        <label class="form-label">中心节点 SSH 地址</label>
+                                        <input type="text" class="form-control" id="proxy-ssh-host" placeholder="例: 192.168.1.100">
+                                    </div>
+                                    <div class="col-md-3">
+                                        <label class="form-label">SSH 端口</label>
+                                        <input type="number" class="form-control" id="proxy-ssh-port" min="1" max="65535" value="22">
+                                    </div>
+                                    <div class="col-md-3">
+                                        <label class="form-label">SSH 用户</label>
+                                        <input type="text" class="form-control" id="proxy-ssh-user" placeholder="例: dhga">
+                                    </div>
+                                    <div class="col-md-6">
+                                        <label class="form-label">私钥路径（Agent 上）</label>
+                                        <input type="text" class="form-control" id="proxy-identity-file" placeholder="/home/monitor/.ssh/id_ed25519_monitor">
+                                    </div>
+                                    <div class="col-md-3">
+                                        <div class="form-check form-switch">
+                                            <input class="form-check-input" type="checkbox" id="proxy-strict-host-check" checked>
+                                            <label class="form-check-label" for="proxy-strict-host-check">严格 host key 检查</label>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-3">
+                                        <div class="form-check form-switch">
+                                            <input class="form-check-input" type="checkbox" id="proxy-auto-start">
+                                            <label class="form-check-label" for="proxy-auto-start">Agent 启动时自动开启</label>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-ghost-secondary" data-bs-dismiss="modal">取消</button>
+                    <button type="button" class="btn btn-primary" onclick="saveServer()">
+                        <i class="ti ti-device-floppy me-1"></i>确认
+                    </button>
                 </div>
             </div>
         </div>
+    </div>
 
         <!-- 删除确认模态框 -->
         <div class="modal modal-blur fade" id="delete-modal" tabindex="-1" role="dialog" aria-hidden="true">

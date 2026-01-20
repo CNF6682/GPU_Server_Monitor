@@ -10,6 +10,7 @@ let chart = null;
 let currentRange = 24; // 默认 24 小时
 let currentMetric = 'cpu_pct';
 let refreshTimer = null;
+let proxyConfigCache = null;
 
 /**
  * 初始化页面
@@ -442,6 +443,7 @@ async function loadProxyStatus() {
 
     try {
         const response = await api.getProxyConfig(serverId);
+        proxyConfigCache = response.config || null;
         renderProxyStatus(response);
     } catch (error) {
         console.warn('Failed to load proxy status:', error);
@@ -458,22 +460,43 @@ function renderProxyStatus(data) {
     const status = data.status || {};
     const row = document.getElementById('proxy-status-row');
 
-    // 如果未启用代理，则隐藏
-    if (!config || !config.enabled) {
-        row.style.display = 'none';
-        return;
-    }
-
     row.style.display = 'block';
 
     // 状态
     const statusBadge = document.getElementById('proxy-status-badge');
     const btnStart = document.getElementById('btn-start-proxy');
     const btnStop = document.getElementById('btn-stop-proxy');
+    const btnApply = document.getElementById('btn-apply-proxy');
+    const portListenInput = document.getElementById('proxy-listen-port-input');
+    const portCenterInput = document.getElementById('proxy-center-port-input');
+    const configHint = document.getElementById('proxy-config-hint');
 
-    // 状态: running, stopped, starting, error, unknown
+    // 如果没有配置，给出提示
+    if (!config) {
+        statusBadge.innerHTML = '<span class="status-indicator bg-warning me-1"></span> 未配置';
+        document.getElementById('proxy-mapping').textContent = '-';
+        document.getElementById('proxy-pid').textContent = '-';
+        document.getElementById('proxy-last-error').textContent = '未找到代理配置，请在服务器管理中配置后再修改端口。';
+        document.getElementById('proxy-ssh-target').textContent = '-';
+        document.getElementById('proxy-uptime').textContent = '-';
+        btnStart.style.display = 'none';
+        btnStop.style.display = 'none';
+        btnApply.classList.add('disabled');
+        portListenInput.value = '';
+        portCenterInput.value = '';
+        configHint.textContent = '未配置代理，无法应用。';
+        return;
+    } else {
+        btnApply.classList.remove('disabled');
+        configHint.textContent = '修改端口后将先停止再启动转发。';
+        // 表单回填
+        portListenInput.value = config.server_listen_port || '';
+        portCenterInput.value = config.center_proxy_port || '';
+    }
+
+    // 状态: running, stopped, starting, error, unknown, disabled
     // 这里假设 status.status 是 agent 返回的字段
-    const state = status.status || 'unknown';
+    const state = (!config.enabled) ? 'disabled' : (status.status || 'unknown');
 
     let stateHtml = '';
     let stateColor = 'secondary';
@@ -493,6 +516,11 @@ function renderProxyStatus(data) {
         stateColor = 'danger';
         btnStart.style.display = 'inline-block';
         btnStop.style.display = 'inline-block'; // 允许尝试停止或重启
+    } else if (state === 'disabled') {
+        stateHtml = '<span class="status-indicator bg-secondary me-1"></span> 已禁用';
+        stateColor = 'secondary';
+        btnStart.style.display = 'inline-block';
+        btnStop.style.display = 'none';
     } else {
         stateHtml = `<span class="status-indicator bg-warning me-1"></span> ${state}`;
         btnStart.style.display = 'inline-block';
@@ -567,6 +595,61 @@ async function controlProxy(action) {
         btnStart.classList.remove('disabled');
         btnStop.classList.remove('disabled');
         // 立即刷新一次
+        loadProxyStatus();
+    }
+}
+
+/**
+ * 应用端口修改（先停后启）
+ */
+async function applyProxyConfig() {
+    if (!serverId) return;
+    if (!proxyConfigCache) {
+        showToast('未找到代理配置，无法应用', 'warning');
+        return;
+    }
+
+    const loading = document.getElementById('proxy-loading');
+    const btnStart = document.getElementById('btn-start-proxy');
+    const btnStop = document.getElementById('btn-stop-proxy');
+    const btnApply = document.getElementById('btn-apply-proxy');
+
+    const listenPort = parseInt(document.getElementById('proxy-listen-port-input').value, 10);
+    const centerPort = parseInt(document.getElementById('proxy-center-port-input').value, 10);
+
+    if (!listenPort || listenPort < 1 || listenPort > 65535) {
+        showToast('请输入有效的 Agent 本地端口', 'warning');
+        return;
+    }
+    if (!centerPort || centerPort < 1 || centerPort > 65535) {
+        showToast('请输入有效的中心代理端口', 'warning');
+        return;
+    }
+
+    const newConfig = { ...proxyConfigCache, server_listen_port: listenPort, center_proxy_port: centerPort };
+
+    try {
+        loading.style.display = 'inline-block';
+        btnStart.classList.add('disabled');
+        btnStop.classList.add('disabled');
+        btnApply.classList.add('disabled');
+
+        // 先保存+停止（容错：如果本身已停，后端会忽略）
+        await api.updateProxyConfig(serverId, newConfig, 'stop');
+        // 再保存+启动
+        await api.updateProxyConfig(serverId, newConfig, 'start');
+
+        proxyConfigCache = newConfig;
+        showToast('端口已应用并重启代理', 'success');
+        setTimeout(loadProxyStatus, 2000);
+    } catch (error) {
+        console.error('Failed to apply proxy config:', error);
+        showToast(`应用失败: ${error.message}`, 'danger');
+    } finally {
+        loading.style.display = 'none';
+        btnStart.classList.remove('disabled');
+        btnStop.classList.remove('disabled');
+        btnApply.classList.remove('disabled');
         loadProxyStatus();
     }
 }
