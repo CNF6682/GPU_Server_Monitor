@@ -33,6 +33,7 @@ async function init() {
     // 加载数据
     await loadServerDetail();
     await loadTimeseries();
+    await loadProxyStatus();
 
     // 启动自动刷新
     startAutoRefresh();
@@ -135,16 +136,47 @@ function renderServerDetail(server) {
     }
 
     // GPU
+    // GPU
     const gpuValue = latest.gpu_util_pct;
-    if (gpuValue !== null && gpuValue !== undefined) {
+    const gpuRow = document.getElementById('gpu-details-row');
+    const gpuBody = document.getElementById('gpu-list-body');
+    const gpuCardTitle = document.querySelector('#current-gpu').parentElement.querySelector('.subheader'); // Hacky search, better to id the title if possible, or just change the text content logic below
+
+    if (gpuValue !== null && gpuValue !== undefined && gpuValue >= 0) { // Changed condition to be safer
+        // Update Summary Card
+        const count = latest.gpu_count || (latest.gpus ? latest.gpus.length : 1);
+
+        // Update header text if multiple GPUs
+        if (count > 1) {
+            // Find the subheader div relative to #current-gpu
+            const cardBody = document.getElementById('current-gpu').parentNode;
+            const subheader = cardBody.querySelector('.subheader');
+            if (subheader) subheader.textContent = `GPU 使用率 (${count}卡)`;
+        }
+
         document.getElementById('current-gpu').textContent = formatPercent(gpuValue);
+
+        // Show Memory Details in Summary
         if (latest.gpu_mem_used_mb && latest.gpu_mem_total_mb) {
             document.getElementById('gpu-detail').textContent =
-                `显存: ${latest.gpu_mem_used_mb} / ${latest.gpu_mem_total_mb} MB`;
+                `显存: ${formatBytes(latest.gpu_mem_used_mb * 1024 * 1024)} / ${formatBytes(latest.gpu_mem_total_mb * 1024 * 1024)}`;
+        } else {
+            document.getElementById('gpu-detail').textContent = '-';
         }
+
+        // Render Details Table
+        if (latest.gpus && latest.gpus.length > 0) {
+            gpuRow.style.display = 'block';
+            renderGPUList(latest.gpus);
+        } else {
+            // Backward compatibility or hidden gpus array
+            gpuRow.style.display = 'none';
+        }
+
     } else {
         document.getElementById('current-gpu').textContent = 'N/A';
         document.getElementById('gpu-detail').textContent = '无 GPU 或不可用';
+        gpuRow.style.display = 'none';
     }
 
     // 最后更新
@@ -190,6 +222,44 @@ function renderServices(server) {
       `).join('')}
     </div>
   `;
+}
+
+/**
+ * 渲染 GPU 列表
+ */
+function renderGPUList(gpus) {
+    const tbody = document.getElementById('gpu-list-body');
+    if (!tbody) return;
+
+    tbody.innerHTML = gpus.map(gpu => {
+        const util = gpu.util_pct || 0;
+        const temp = gpu.temperature_c;
+        const isHighTemp = temp > 80;
+
+        return `
+            <tr>
+                <td>${gpu.index}</td>
+                <td>${escapeHtml(gpu.name)}</td>
+                <td>
+                    <div class="d-flex align-items-center">
+                        <span class="me-2">${util.toFixed(1)}%</span>
+                        <div class="progress progress-sm w-100">
+                            <div class="progress-bar ${getProgressColorClass(util)}" style="width: ${util}%"></div>
+                        </div>
+                    </div>
+                </td>
+                <td>
+                    ${formatBytes(gpu.mem_used_mb * 1024 * 1024)} / ${formatBytes(gpu.mem_total_mb * 1024 * 1024)}
+                </td>
+                <td>
+                    <span class="${isHighTemp ? 'text-danger fw-bold' : ''}">
+                        ${temp !== undefined && temp !== null ? temp.toFixed(1) + '°C' : '-'}
+                        ${isHighTemp ? '<i class="ti ti-alert-triangle ms-1"></i>' : ''}
+                    </span>
+                </td>
+            </tr>
+        `;
+    }).join('');
 }
 
 /**
@@ -359,6 +429,144 @@ document.addEventListener('visibilitychange', () => {
         stopAutoRefresh();
     } else {
         loadServerDetail();
+        loadProxyStatus(); // 同时也刷新即时状态
         startAutoRefresh();
     }
 });
+
+/**
+ * 加载代理状态
+ */
+async function loadProxyStatus() {
+    if (!serverId) return;
+
+    try {
+        const response = await api.getProxyConfig(serverId);
+        renderProxyStatus(response);
+    } catch (error) {
+        console.warn('Failed to load proxy status:', error);
+        // 隐藏卡片或显示错误? 如果是 404 或未配置，通常 API 会返回空配置
+        document.getElementById('proxy-status-row').style.display = 'none';
+    }
+}
+
+/**
+ * 渲染代理状态
+ */
+function renderProxyStatus(data) {
+    const config = data.config;
+    const status = data.status || {};
+    const row = document.getElementById('proxy-status-row');
+
+    // 如果未启用代理，则隐藏
+    if (!config || !config.enabled) {
+        row.style.display = 'none';
+        return;
+    }
+
+    row.style.display = 'block';
+
+    // 状态
+    const statusBadge = document.getElementById('proxy-status-badge');
+    const btnStart = document.getElementById('btn-start-proxy');
+    const btnStop = document.getElementById('btn-stop-proxy');
+
+    // 状态: running, stopped, starting, error, unknown
+    // 这里假设 status.status 是 agent 返回的字段
+    const state = status.status || 'unknown';
+
+    let stateHtml = '';
+    let stateColor = 'secondary';
+
+    if (state === 'running') {
+        stateHtml = '<span class="status-indicator online me-1"></span> 运行中';
+        stateColor = 'success';
+        btnStart.style.display = 'none';
+        btnStop.style.display = 'inline-block';
+    } else if (state === 'stopped') {
+        stateHtml = '<span class="status-indicator offline me-1"></span> 已停止';
+        stateColor = 'secondary';
+        btnStart.style.display = 'inline-block';
+        btnStop.style.display = 'none';
+    } else if (state === 'error') {
+        stateHtml = '<span class="status-indicator bg-danger me-1"></span> 错误';
+        stateColor = 'danger';
+        btnStart.style.display = 'inline-block';
+        btnStop.style.display = 'inline-block'; // 允许尝试停止或重启
+    } else {
+        stateHtml = `<span class="status-indicator bg-warning me-1"></span> ${state}`;
+        btnStart.style.display = 'inline-block';
+        btnStop.style.display = 'inline-block';
+    }
+
+    statusBadge.innerHTML = stateHtml;
+    // statusBadge.className = `font-weight-bold text-${stateColor}`; // 如果需要改变文字颜色
+
+    // 端口映射
+    document.getElementById('proxy-mapping').textContent =
+        `Loc:${config.server_listen_port} -> Rem:${config.center_proxy_port}`;
+
+    // PID
+    document.getElementById('proxy-pid').textContent = status.pid || '-';
+
+    // 最近错误
+    document.getElementById('proxy-last-error').textContent = status.last_error || '-';
+
+    // SSH 目标
+    document.getElementById('proxy-ssh-target').textContent =
+        `${config.center_ssh_user}@${config.center_ssh_host}:${config.center_ssh_port}`;
+
+    // 运行时间
+    document.getElementById('proxy-uptime').textContent =
+        status.connected_since ? formatRelativeTime(status.connected_since) : '-';
+}
+
+/**
+ * 控制代理 (启动/停止)
+ */
+async function controlProxy(action) {
+    if (!serverId) return;
+
+    const loading = document.getElementById('proxy-loading');
+    const btnStart = document.getElementById('btn-start-proxy');
+    const btnStop = document.getElementById('btn-stop-proxy');
+
+    try {
+        // UI Loading State
+        loading.style.display = 'inline-block';
+        btnStart.classList.add('disabled');
+        btnStop.classList.add('disabled');
+
+        // 只需要传 action，配置传 null (表示不修改配置)
+        // 或者需要传当前配置？api-client 实现是 updateProxyConfig(id, config, action)
+        // 获取当前配置有点麻烦，api 允许 config 为 null 吗？
+        // 根据之前的实现，如果 config 为 null，后端可能会报错。
+        // 安全起见，我们先 fetch 再 update，或者修改 api-client 支持仅 action。
+        // 但这里为了简化，我们假设后端支持 partial update 或 api-client 能够处理。
+        // 实际上 servers-manage.js 是 loadProxyConfig 然后提交完整 config。
+        // 这里没有 config 表单。
+        // 策略：先 getProxyConfig 获取 config，然后回填。
+
+        const currentData = await api.getProxyConfig(serverId);
+        if (!currentData || !currentData.config) {
+            throw new Error('无法获取当前配置');
+        }
+
+        await api.updateProxyConfig(serverId, currentData.config, action);
+
+        showToast(`已发送${action === 'start' ? '启动' : '停止'}指令`, 'success');
+
+        // 延迟刷新一下状态
+        setTimeout(loadProxyStatus, 2000); // 给 Agent 一点反应时间
+
+    } catch (error) {
+        console.error(`Failed to ${action} proxy:`, error);
+        showToast(`操作失败: ${error.message}`, 'danger');
+    } finally {
+        loading.style.display = 'none';
+        btnStart.classList.remove('disabled');
+        btnStop.classList.remove('disabled');
+        // 立即刷新一次
+        loadProxyStatus();
+    }
+}

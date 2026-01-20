@@ -11,34 +11,34 @@ let refreshTimer = null;
  * 初始化页面
  */
 async function init() {
-    await loadServers();
-    startAutoRefresh();
+  await loadServers();
+  startAutoRefresh();
 }
 
 /**
  * 加载服务器列表
  */
 async function loadServers() {
-    try {
-        servers = await api.getServers();
-        renderServerCards(servers);
-        updateStats(servers);
-        updateLastUpdateTime();
-    } catch (error) {
-        console.error('Failed to load servers:', error);
-        showToast(`加载失败: ${error.message}`, 'danger');
-        renderError();
-    }
+  try {
+    servers = await api.getServers();
+    renderServerCards(servers);
+    updateStats(servers);
+    updateLastUpdateTime();
+  } catch (error) {
+    console.error('Failed to load servers:', error);
+    showToast(`加载失败: ${error.message}`, 'danger');
+    renderError();
+  }
 }
 
 /**
  * 渲染服务器卡片
  */
 function renderServerCards(servers) {
-    const container = document.getElementById('server-cards');
+  const container = document.getElementById('server-cards');
 
-    if (!servers || servers.length === 0) {
-        container.innerHTML = `
+  if (!servers || servers.length === 0) {
+    container.innerHTML = `
       <div class="col-12">
         <div class="empty-state">
           <i class="ti ti-server-off" style="font-size: 64px; opacity: 0.5;"></i>
@@ -50,25 +50,25 @@ function renderServerCards(servers) {
         </div>
       </div>
     `;
-        return;
-    }
+    return;
+  }
 
-    container.innerHTML = servers.map(server => renderServerCard(server)).join('');
+  container.innerHTML = servers.map(server => renderServerCard(server)).join('');
 }
 
 /**
  * 渲染单个服务器卡片
  */
 function renderServerCard(server) {
-    const online = server.online;
-    const latest = server.latest || {};
+  const online = server.online;
+  const latest = server.latest || {};
 
-    const cpuValue = latest.cpu_pct;
-    const diskValue = latest.disk_used_pct;
-    const gpuValue = latest.gpu_util_pct;
-    const failedServices = latest.services_failed_count || 0;
+  const cpuValue = latest.cpu_pct;
+  const diskValue = latest.disk_used_pct;
+  const gpuValue = latest.gpu_util_pct;
+  const failedServices = latest.services_failed_count || 0;
 
-    return `
+  return `
     <div class="col-sm-6 col-lg-4">
       <div class="card server-card">
         <div class="card-header">
@@ -112,18 +112,7 @@ function renderServerCard(server) {
             </div>
             
             <!-- GPU 使用率（如果有） -->
-            ${gpuValue !== null && gpuValue !== undefined ? `
-              <div class="mb-3">
-                <div class="d-flex justify-content-between mb-1">
-                  <span class="metric-label">GPU</span>
-                  <span class="metric-value">${formatPercent(gpuValue)}</span>
-                </div>
-                <div class="metric-progress">
-                  <div class="progress-bar ${getProgressColorClass(gpuValue)}" 
-                       style="width: ${gpuValue || 0}%"></div>
-                </div>
-              </div>
-            ` : ''}
+            ${renderGPUSection(latest)}
             
             <!-- 最后更新 -->
             <div class="text-muted small">
@@ -152,54 +141,54 @@ function renderServerCard(server) {
  * 更新统计信息
  */
 function updateStats(servers) {
-    const total = servers.length;
-    const online = servers.filter(s => s.online).length;
-    const offline = total - online;
-    const failedServices = servers.reduce((sum, s) => {
-        return sum + (s.latest?.services_failed_count || 0);
-    }, 0);
+  const total = servers.length;
+  const online = servers.filter(s => s.online).length;
+  const offline = total - online;
+  const failedServices = servers.reduce((sum, s) => {
+    return sum + (s.latest?.services_failed_count || 0);
+  }, 0);
 
-    document.getElementById('stat-total').textContent = total;
-    document.getElementById('stat-online').textContent = online;
-    document.getElementById('stat-offline').textContent = offline;
-    document.getElementById('stat-failed-services').textContent = failedServices;
+  document.getElementById('stat-total').textContent = total;
+  document.getElementById('stat-online').textContent = online;
+  document.getElementById('stat-offline').textContent = offline;
+  document.getElementById('stat-failed-services').textContent = failedServices;
 }
 
 /**
  * 更新最后刷新时间
  */
 function updateLastUpdateTime() {
-    const now = new Date();
-    document.getElementById('last-update').textContent =
-        `最后更新: ${now.toLocaleTimeString('zh-CN')}`;
+  const now = new Date();
+  document.getElementById('last-update').textContent =
+    `最后更新: ${now.toLocaleTimeString('zh-CN')}`;
 }
 
 /**
  * 启动自动刷新
  */
 function startAutoRefresh() {
-    if (refreshTimer) {
-        clearInterval(refreshTimer);
-    }
-    refreshTimer = setInterval(loadServers, REFRESH_INTERVAL);
+  if (refreshTimer) {
+    clearInterval(refreshTimer);
+  }
+  refreshTimer = setInterval(loadServers, REFRESH_INTERVAL);
 }
 
 /**
  * 停止自动刷新
  */
 function stopAutoRefresh() {
-    if (refreshTimer) {
-        clearInterval(refreshTimer);
-        refreshTimer = null;
-    }
+  if (refreshTimer) {
+    clearInterval(refreshTimer);
+    refreshTimer = null;
+  }
 }
 
 /**
  * 渲染错误状态
  */
 function renderError() {
-    const container = document.getElementById('server-cards');
-    container.innerHTML = `
+  const container = document.getElementById('server-cards');
+  container.innerHTML = `
     <div class="col-12">
       <div class="empty-state">
         <i class="ti ti-alert-triangle" style="font-size: 64px; color: #d63939;"></i>
@@ -214,13 +203,66 @@ function renderError() {
 }
 
 /**
+ * 渲染 GPU 部分
+ */
+function renderGPUSection(latest) {
+  const gpuValue = latest.gpu_util_pct;
+  // Check if GPU data exists
+  if (gpuValue === null || gpuValue === undefined || gpuValue < 0) {
+    return '';
+  }
+
+  const gpus = latest.gpus || [];
+  const count = latest.gpu_count || (gpus.length > 0 ? gpus.length : 1);
+
+  // Single GPU (Legacy or explicit single)
+  if (count <= 1) {
+    return `
+            <div class="mb-3">
+                <div class="d-flex justify-content-between mb-1">
+                    <span class="metric-label">GPU</span>
+                    <span class="metric-value">${formatPercent(gpuValue)}</span>
+                </div>
+                <div class="metric-progress">
+                    <div class="progress-bar ${getProgressColorClass(gpuValue)}" 
+                         style="width: ${gpuValue || 0}%"></div>
+                </div>
+            </div>
+        `;
+  }
+
+  // Multi-GPU
+  // Render mini bars
+  const miniBars = gpus.map(gpu => `
+        <div class="col-3 mb-1" title="${escapeHtml(gpu.name)}: ${gpu.util_pct?.toFixed(1)}%">
+            <div class="progress progress-sm">
+                <div class="progress-bar ${getProgressColorClass(gpu.util_pct)}" style="width: ${gpu.util_pct || 0}%"></div>
+            </div>
+        </div>
+    `).join('');
+
+  return `
+        <div class="mb-3">
+            <div class="d-flex justify-content-between mb-1">
+                <span class="metric-label">GPU (${count})</span>
+                <span class="metric-value">${formatPercent(gpuValue)} (Avg)</span>
+            </div>
+            <div class="row g-1">
+                ${miniBars}
+            </div>
+            ${gpus.length === 0 ? '<div class="text-muted small">无详细信息</div>' : ''}
+        </div>
+    `;
+}
+
+/**
  * HTML 转义
  */
 function escapeHtml(text) {
-    if (!text) return '';
-    const div = document.createElement('div');
-    div.textContent = text;
-    return div.innerHTML;
+  if (!text) return '';
+  const div = document.createElement('div');
+  div.textContent = text;
+  return div.innerHTML;
 }
 
 // 页面加载完成后初始化
@@ -228,10 +270,10 @@ document.addEventListener('DOMContentLoaded', init);
 
 // 页面隐藏时停止刷新，显示时恢复
 document.addEventListener('visibilitychange', () => {
-    if (document.hidden) {
-        stopAutoRefresh();
-    } else {
-        loadServers();
-        startAutoRefresh();
-    }
+  if (document.hidden) {
+    stopAutoRefresh();
+  } else {
+    loadServers();
+    startAutoRefresh();
+  }
 });

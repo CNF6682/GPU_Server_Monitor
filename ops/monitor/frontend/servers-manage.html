@@ -39,6 +39,14 @@
                                 <span class="nav-link-title">概览</span>
                             </a>
                         </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="history.html">
+                                <span class="nav-link-icon d-md-none d-lg-inline-block">
+                                    <i class="ti ti-history"></i>
+                                </span>
+                                <span class="nav-link-title">历史</span>
+                            </a>
+                        </li>
                         <li class="nav-item active">
                             <a class="nav-link" href="servers-manage.html">
                                 <span class="nav-link-icon d-md-none d-lg-inline-block">
@@ -173,69 +181,40 @@
                         </div>
 
                         <div class="mb-3">
-                            <label class="form-check">
-                                <input type="checkbox" class="form-check-input" id="server-enabled" checked>
-                                <span class="form-check-label">启用监控</span>
-                            </label>
+                            </button>
                         </div>
-
-                        <!-- 服务发现区域 -->
-                        <div class="mb-3" id="discover-section" style="display: none;">
-                            <div class="card bg-light">
-                                <div class="card-body">
-                                    <div class="d-flex justify-content-between align-items-center mb-3">
-                                        <h4 class="card-title mb-0">服务发现</h4>
-                                        <button type="button" class="btn btn-sm btn-outline-primary"
-                                            onclick="discoverServices()">
-                                            <i class="ti ti-search me-1"></i>发现服务
-                                        </button>
-                                    </div>
-                                    <div id="discovered-services">
-                                        <span class="text-muted">点击"发现服务"按钮获取可监控的服务列表</span>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </form>
-                </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-ghost-secondary" data-bs-dismiss="modal">取消</button>
-                    <button type="button" class="btn btn-primary" onclick="saveServer()">
-                        <i class="ti ti-device-floppy me-1"></i>保存
-                    </button>
                 </div>
             </div>
         </div>
-    </div>
 
-    <!-- 删除确认模态框 -->
-    <div class="modal modal-blur fade" id="delete-modal" tabindex="-1" role="dialog" aria-hidden="true">
-        <div class="modal-dialog modal-sm" role="document">
-            <div class="modal-content">
-                <div class="modal-status bg-danger"></div>
-                <div class="modal-body text-center py-4">
-                    <i class="ti ti-alert-triangle icon text-danger icon-lg mb-3"></i>
-                    <h3>确认删除？</h3>
-                    <p class="text-muted">删除后将停止监控该服务器，历史数据将被保留。</p>
-                </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-ghost-secondary" data-bs-dismiss="modal">取消</button>
-                    <button type="button" class="btn btn-danger" id="confirm-delete-btn">
-                        <i class="ti ti-trash me-1"></i>删除
-                    </button>
+        <!-- 删除确认模态框 -->
+        <div class="modal modal-blur fade" id="delete-modal" tabindex="-1" role="dialog" aria-hidden="true">
+            <div class="modal-dialog modal-sm" role="document">
+                <div class="modal-content">
+                    <div class="modal-status bg-danger"></div>
+                    <div class="modal-body text-center py-4">
+                        <i class="ti ti-alert-triangle icon text-danger icon-lg mb-3"></i>
+                        <h3>确认删除？</h3>
+                        <p class="text-muted">删除后将停止监控该服务器，历史数据将被保留。</p>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-ghost-secondary" data-bs-dismiss="modal">取消</button>
+                        <button type="button" class="btn btn-danger" id="confirm-delete-btn">
+                            <i class="ti ti-trash me-1"></i>删除
+                        </button>
+                    </div>
                 </div>
             </div>
         </div>
-    </div>
 
-    <!-- Tabler JS (CDN) -->
-    <script src="https://cdn.jsdelivr.net/npm/@tabler/core@1.0.0-beta17/dist/js/tabler.min.js"></script>
-    <!-- Config -->
-    <script src="config.js"></script>
-    <!-- API Client -->
-    <script src="assets/js/api-client.js"></script>
-    <!-- Servers Manage Logic -->
-    <script src="assets/js/servers-manage.js"></script>
+        <!-- Tabler JS (CDN) -->
+        <script src="https://cdn.jsdelivr.net/npm/@tabler/core@1.0.0-beta17/dist/js/tabler.min.js"></script>
+        <!-- Config -->
+        <script src="config.js"></script>
+        <!-- API Client -->
+        <script src="assets/js/api-client.js"></script>
+        <!-- Servers Manage Logic -->
+        <script src="assets/js/servers-manage.js"></script>
 </body>
 
 </html>

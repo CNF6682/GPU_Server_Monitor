@@ -28,3 +28,15 @@ services_allowlist: []
 # - nvidia: 强制使用 NVIDIA
 # - off: 禁用 GPU 监控
 gpu: "auto"
+
+# 代理转发配置（可选）
+# proxy:
+#   enabled: true
+#   server_listen_port: 8080
+#   center_proxy_port: 7879
+#   center_ssh_host: "192.168.1.100"
+#   center_ssh_port: 22
+#   center_ssh_user: "dhga"
+#   identity_file: "/home/monitor/.ssh/id_ed25519_monitor"
+#   strict_host_key_checking: true
+#   auto_start: false

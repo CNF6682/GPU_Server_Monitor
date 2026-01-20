@@ -19,6 +19,8 @@ from monitor_agent.models import (
     DiskInfo,
     GPUInfo,
     ServiceInfo,
+    ProxyStatusResponse,
+    ProxyStartRequest,
 )
 from monitor_agent.collectors import (
     get_cpu_percent,
@@ -27,6 +29,8 @@ from monitor_agent.collectors import (
     get_service_status,
 )
 from monitor_agent.collectors.systemd import discover_services
+from monitor_agent.proxy_forwarder import get_proxy_manager
+from monitor_agent.config import ProxyConfig
 
 
 # 创建 FastAPI 应用
@@ -65,6 +69,19 @@ def verify_token(authorization: Optional[str] = Header(None)) -> bool:
         raise HTTPException(status_code=401, detail="Invalid token")
 
     return True
+
+
+@app.on_event("startup")
+async def _startup_proxy():
+    config = get_config()
+    manager = get_proxy_manager()
+    await manager.configure(config.proxy)
+    if config.proxy and config.proxy.enabled and config.proxy.auto_start:
+        try:
+            await manager.start()
+        except Exception:
+            # 仅记录状态，不阻塞 Agent 启动
+            pass
 
 
 @app.get("/v1/snapshot", response_model=SnapshotResponse)
@@ -197,3 +214,43 @@ async def list_services(authorized: bool = Depends(verify_token)):
         return [ServiceDiscoveryInfo(**s) for s in services]
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Failed to discover services: {str(e)}")
+
+
+@app.get("/v1/proxy/status", response_model=ProxyStatusResponse)
+async def get_proxy_status(authorized: bool = Depends(verify_token)):
+    """获取代理转发状态"""
+    manager = get_proxy_manager()
+    status = await manager.get_status()
+    return ProxyStatusResponse(**status.__dict__)
+
+
+@app.post("/v1/proxy/start", response_model=ProxyStatusResponse)
+async def start_proxy(req: Optional[ProxyStartRequest] = None, authorized: bool = Depends(verify_token)):
+    """启动/重启代理转发（可选传入 config 覆盖）"""
+    manager = get_proxy_manager()
+    config = get_config()
+
+    override = None
+    if req and req.config is not None:
+        override = ProxyConfig(**req.config)
+        await manager.configure(override)
+    else:
+        await manager.configure(config.proxy)
+
+    try:
+        await manager.start(config_override=override)
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    except FileNotFoundError as e:
+        raise HTTPException(status_code=500, detail=str(e))
+    status = await manager.get_status()
+    return ProxyStatusResponse(**status.__dict__)
+
+
+@app.post("/v1/proxy/stop", response_model=ProxyStatusResponse)
+async def stop_proxy(authorized: bool = Depends(verify_token)):
+    """优雅停止代理转发"""
+    manager = get_proxy_manager()
+    await manager.stop()
+    status = await manager.get_status()
+    return ProxyStatusResponse(**status.__dict__)

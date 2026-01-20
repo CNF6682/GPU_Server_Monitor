@@ -9,7 +9,7 @@
 
 from collections import defaultdict
 from datetime import datetime
-from typing import Dict, List, Optional, Any
+from typing import Dict, List, Optional, Any, Literal
 from pydantic import BaseModel, Field
 import asyncio
 
@@ -29,9 +29,11 @@ class DiskInfo(BaseModel):
 class GPUInfo(BaseModel):
     """GPU 信息"""
     index: int
+    name: Optional[str] = None  # GPU 型号名称（如 "NVIDIA A100"）
     util_pct: float
     mem_used_mb: int
     mem_total_mb: int
+    temperature_c: Optional[float] = None  # GPU 温度（摄氏度）
 
 
 class ServiceInfo(BaseModel):
@@ -59,9 +61,17 @@ class LatestSnapshot(BaseModel):
     disk_used_pct: Optional[float] = None
     disk_used_bytes: Optional[int] = None
     disk_total_bytes: Optional[int] = None
-    gpu_util_pct: Optional[float] = None
-    gpu_mem_used_mb: Optional[int] = None
-    gpu_mem_total_mb: Optional[int] = None
+    
+    # 多 GPU 支持
+    gpus: Optional[List[GPUInfo]] = None  # 完整 GPU 数组
+    gpu_count: int = 0  # GPU 数量
+    
+    # 向后兼容字段（聚合值）
+    gpu_util_pct: Optional[float] = None  # 最高利用率（最忙的 GPU）
+    gpu_util_pct_avg: Optional[float] = None  # 平均利用率
+    gpu_mem_used_mb: Optional[int] = None  # 总显存使用（所有 GPU 之和）
+    gpu_mem_total_mb: Optional[int] = None  # 总显存容量（所有 GPU 之和）
+    
     services_failed_count: int = 0
 
 
@@ -121,12 +131,77 @@ class EventResponse(BaseModel):
     message: Optional[str] = None
 
 
+class HourlySampleResponse(BaseModel):
+    """小时聚合样本响应（用于历史查询）"""
+    id: int
+    server_id: int
+    server_name: str
+    ts: str
+    cpu_pct_avg: Optional[float] = None
+    cpu_pct_max: Optional[float] = None
+    disk_used_pct: Optional[float] = None
+    disk_used_bytes: Optional[int] = None
+    disk_total_bytes: Optional[int] = None
+    gpu_util_pct_avg: Optional[float] = None
+    gpu_util_pct_max: Optional[float] = None
+    gpu_mem_used_mb: Optional[int] = None
+    gpu_mem_total_mb: Optional[int] = None
+
+
+class HourlyHistoryResponse(BaseModel):
+    """历史数据分页响应"""
+    total: int
+    limit: int
+    offset: int
+    data: List[HourlySampleResponse] = Field(default_factory=list)
+
+
 class ServiceCatalogItem(BaseModel):
     """服务发现项"""
     name: str
     active_state: str
     enabled: bool = True
     description: Optional[str] = None
+
+
+class ProxyConfig(BaseModel):
+    """代理转发配置（存储于 servers.proxy_config）"""
+
+    enabled: bool = False
+    server_listen_port: int
+    center_proxy_port: int
+    center_ssh_host: str
+    center_ssh_port: int = 22
+    center_ssh_user: str
+    identity_file: str
+    strict_host_key_checking: bool = True
+    auto_start: bool = False
+
+
+class ProxyStatus(BaseModel):
+    """Agent 侧代理转发状态"""
+
+    status: Literal["disabled", "stopped", "connecting", "connected", "error", "unknown"] = "unknown"
+    pid: Optional[int] = None
+    listen_port: Optional[int] = None
+    target: Optional[str] = None
+    last_error: Optional[str] = None
+    connected_since: Optional[str] = None
+    retry_count: int = 0
+
+
+class ServerProxyResponse(BaseModel):
+    """GET /api/servers/{id}/proxy 响应"""
+
+    config: Optional[ProxyConfig] = None
+    status: ProxyStatus
+
+
+class ServerProxyUpdateRequest(BaseModel):
+    """PUT /api/servers/{id}/proxy 请求"""
+
+    config: Optional[ProxyConfig] = None
+    action: Optional[Literal["start", "stop"]] = None
 
 
 # =============================================================================

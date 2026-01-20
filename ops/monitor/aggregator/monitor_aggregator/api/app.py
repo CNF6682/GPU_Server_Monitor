@@ -12,7 +12,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 
 from ..config import get_config
-from .routers import servers, timeseries, events
+from .routers import servers, timeseries, events, history
 
 logger = logging.getLogger(__name__)
 
@@ -50,6 +50,7 @@ def create_app() -> FastAPI:
     app.include_router(servers.router)
     app.include_router(timeseries.router)
     app.include_router(events.router)
+    app.include_router(history.router)
     
     # 静态文件托管（前端）
     if config.frontend.enabled:

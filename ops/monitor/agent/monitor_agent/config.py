@@ -6,10 +6,24 @@
 
 import os
 from pathlib import Path
-from typing import List
+from typing import List, Optional
 
 import yaml
 from pydantic import BaseModel, Field
+
+
+class ProxyConfig(BaseModel):
+    """代理转发配置模型"""
+
+    enabled: bool = Field(default=False, description="是否启用代理")
+    server_listen_port: int = Field(..., description="Agent 本地监听端口")
+    center_proxy_port: int = Field(..., description="中心节点代理端口")
+    center_ssh_host: str = Field(..., description="中心节点 SSH 地址")
+    center_ssh_port: int = Field(default=22, description="中心节点 SSH 端口")
+    center_ssh_user: str = Field(..., description="SSH 用户名")
+    identity_file: str = Field(..., description="SSH 私钥路径")
+    strict_host_key_checking: bool = Field(default=True, description="是否严格检查 host key")
+    auto_start: bool = Field(default=False, description="Agent 启动时自动启动代理")
 
 
 class AgentConfig(BaseModel):
@@ -21,6 +35,7 @@ class AgentConfig(BaseModel):
     disks: List[str] = Field(default=["/"], description="监控的磁盘挂载点")
     services_allowlist: List[str] = Field(default=[], description="允许查询的 systemd 服务列表")
     gpu: str = Field(default="auto", description="GPU 采集模式: auto|off|nvidia")
+    proxy: Optional[ProxyConfig] = Field(default=None, description="代理转发配置（可选）")
 
     @property
     def host(self) -> str:

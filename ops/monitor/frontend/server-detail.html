@@ -40,6 +40,14 @@
                             </a>
                         </li>
                         <li class="nav-item">
+                            <a class="nav-link" href="history.html">
+                                <span class="nav-link-icon d-md-none d-lg-inline-block">
+                                    <i class="ti ti-history"></i>
+                                </span>
+                                <span class="nav-link-title">历史</span>
+                            </a>
+                        </li>
+                        <li class="nav-item">
                             <a class="nav-link" href="servers-manage.html">
                                 <span class="nav-link-icon d-md-none d-lg-inline-block">
                                     <i class="ti ti-settings"></i>
@@ -134,69 +142,150 @@
                             </div>
                         </div>
                     </div>
+                </div>
 
-                    <!-- 图表区域 -->
-                    <div class="row row-deck row-cards mb-4">
-                        <div class="col-12">
-                            <div class="card">
-                                <div class="card-header">
-                                    <h3 class="card-title">历史趋势</h3>
-                                    <div class="ms-auto d-flex align-items-center gap-2">
-                                        <!-- 指标选择 -->
-                                        <select class="form-select form-select-sm" id="metric-selector"
-                                            style="width: 150px;">
-                                            <option value="cpu_pct">CPU 使用率</option>
-                                            <option value="disk_used_pct">磁盘使用率</option>
-                                            <option value="gpu_util_pct">GPU 使用率</option>
-                                        </select>
-                                        <!-- 时间范围选择 -->
-                                        <div class="btn-group time-range-selector" role="group">
-                                            <button type="button" class="btn btn-sm" data-range="1">1小时</button>
-                                            <button type="button" class="btn btn-sm" data-range="6">6小时</button>
-                                            <button type="button" class="btn btn-sm btn-primary"
-                                                data-range="24">24小时</button>
-                                            <button type="button" class="btn btn-sm" data-range="168">7天</button>
-                                        </div>
+                <!-- 代理状态 -->
+                <div class="row row-deck row-cards mb-4" id="proxy-status-row" style="display: none;">
+                    <div class="col-12">
+                        <div class="card">
+                            <div class="card-header">
+                                <h3 class="card-title">
+                                    <i class="ti ti-proxy me-2"></i>代理服务状态
+                                </h3>
+                                <div class="card-actions ms-auto">
+                                    <button class="btn btn-sm btn-success" id="btn-start-proxy"
+                                        onclick="controlProxy('start')" style="display: none;">
+                                        <i class="ti ti-player-play me-1"></i>启动
+                                    </button>
+                                    <button class="btn btn-sm btn-danger" id="btn-stop-proxy"
+                                        onclick="controlProxy('stop')" style="display: none;">
+                                        <i class="ti ti-player-stop me-1"></i>停止
+                                    </button>
+                                    <span id="proxy-loading" class="spinner-border spinner-border-sm text-secondary"
+                                        style="display: none;"></span>
+                                </div>
+                            </div>
+                            <div class="card-body">
+                                <div class="row">
+                                    <div class="col-md-3">
+                                        <div class="text-secondary mb-1">运行状态</div>
+                                        <div id="proxy-status-badge" class="font-weight-bold">-</div>
+                                    </div>
+                                    <div class="col-md-3">
+                                        <div class="text-secondary mb-1">端口映射</div>
+                                        <div class="font-weight-medium" id="proxy-mapping">-</div>
+                                    </div>
+                                    <div class="col-md-3">
+                                        <div class="text-secondary mb-1">PID</div>
+                                        <div class="font-weight-medium" id="proxy-pid">-</div>
+                                    </div>
+                                    <div class="col-md-3">
+                                        <div class="text-secondary mb-1">最近错误</div>
+                                        <div class="text-danger small" id="proxy-last-error">-</div>
                                     </div>
                                 </div>
-                                <div class="card-body">
-                                    <div class="chart-container" id="timeseries-chart"></div>
+                                <div class="row mt-3" id="proxy-details-advanced">
+                                    <div class="col-md-6">
+                                        <div class="text-secondary mb-1">SSH 目标</div>
+                                        <div class="text-muted small" id="proxy-ssh-target">-</div>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <div class="text-secondary mb-1">运行时间</div>
+                                        <div class="text-muted small" id="proxy-uptime">-</div>
+                                    </div>
                                 </div>
                             </div>
                         </div>
                     </div>
+                </div>
+                <div class="row row-deck row-cards mb-4" id="gpu-details-row" style="display: none;">
+                    <div class="col-12">
+                        <div class="card">
+                            <div class="card-header">
+                                <h3 class="card-title">GPU 详情</h3>
+                            </div>
+                            <div class="table-responsive">
+                                <table class="table table-vcenter card-table">
+                                    <thead>
+                                        <tr>
+                                            <th>索引</th>
+                                            <th>名称</th>
+                                            <th>利用率</th>
+                                            <th>显存使用</th>
+                                            <th>温度</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="gpu-list-body">
+                                        <!-- GPU 列表将在这里渲染 -->
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
 
-                    <!-- 服务状态 -->
-                    <div class="row row-deck row-cards">
-                        <div class="col-12">
-                            <div class="card">
-                                <div class="card-header">
-                                    <h3 class="card-title">
-                                        <i class="ti ti-apps me-2"></i>服务状态
-                                    </h3>
-                                </div>
-                                <div class="card-body" id="services-list">
-                                    <div class="text-muted text-center py-4">
-                                        加载中...
+                <!-- 图表区域 -->
+                <div class="row row-deck row-cards mb-4">
+                    <div class="col-12">
+                        <div class="card">
+                            <div class="card-header">
+                                <h3 class="card-title">历史趋势</h3>
+                                <div class="ms-auto d-flex align-items-center gap-2">
+                                    <!-- 指标选择 -->
+                                    <select class="form-select form-select-sm" id="metric-selector"
+                                        style="width: 150px;">
+                                        <option value="cpu_pct">CPU 使用率</option>
+                                        <option value="disk_used_pct">磁盘使用率</option>
+                                        <option value="gpu_util_pct">GPU 使用率</option>
+                                    </select>
+                                    <!-- 时间范围选择 -->
+                                    <div class="btn-group time-range-selector" role="group">
+                                        <button type="button" class="btn btn-sm" data-range="1">1小时</button>
+                                        <button type="button" class="btn btn-sm" data-range="6">6小时</button>
+                                        <button type="button" class="btn btn-sm btn-primary"
+                                            data-range="24">24小时</button>
+                                        <button type="button" class="btn btn-sm" data-range="168">7天</button>
                                     </div>
+                                </div>
+                            </div>
+                            <div class="card-body">
+                                <div class="chart-container" id="timeseries-chart"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 服务状态 -->
+                <div class="row row-deck row-cards">
+                    <div class="col-12">
+                        <div class="card">
+                            <div class="card-header">
+                                <h3 class="card-title">
+                                    <i class="ti ti-apps me-2"></i>服务状态
+                                </h3>
+                            </div>
+                            <div class="card-body" id="services-list">
+                                <div class="text-muted text-center py-4">
+                                    加载中...
                                 </div>
                             </div>
                         </div>
                     </div>
                 </div>
             </div>
+        </div>
 
-            <!-- 页脚 -->
-            <footer class="footer footer-transparent d-print-none">
-                <div class="container-xl">
-                    <div class="row text-center align-items-center">
-                        <div class="col-12">
-                            <span class="text-muted">服务器监控系统 &copy; 2026</span>
-                        </div>
+        <!-- 页脚 -->
+        <footer class="footer footer-transparent d-print-none">
+            <div class="container-xl">
+                <div class="row text-center align-items-center">
+                    <div class="col-12">
+                        <span class="text-muted">服务器监控系统 &copy; 2026</span>
                     </div>
                 </div>
-            </footer>
-        </div>
+            </div>
+        </footer>
+    </div>
     </div>
 
     <!-- Tabler JS (CDN) -->

@@ -191,6 +191,41 @@ class Database:
                 "UPDATE servers SET last_seen_at = ? WHERE id = ?",
                 (ts, server_id)
             )
+
+    def get_proxy_config(self, server_id: int) -> Optional[str]:
+        """
+        获取代理转发配置（JSON 字符串）
+
+        兼容：未升级到 v1.1 时可能没有 proxy_config 字段。
+        """
+        with self.get_conn() as conn:
+            try:
+                row = conn.execute(
+                    "SELECT proxy_config FROM servers WHERE id = ?",
+                    (server_id,),
+                ).fetchone()
+            except sqlite3.OperationalError:
+                return None
+            if not row:
+                return None
+            return row["proxy_config"]
+
+    def set_proxy_config(self, server_id: int, proxy_config_json: Optional[str]) -> bool:
+        """
+        保存代理转发配置（JSON 字符串）
+
+        Returns:
+            是否更新成功
+        """
+        with self.get_conn() as conn:
+            try:
+                cursor = conn.execute(
+                    "UPDATE servers SET proxy_config = ? WHERE id = ?",
+                    (proxy_config_json, server_id),
+                )
+            except sqlite3.OperationalError:
+                return False
+            return cursor.rowcount > 0
     
     # =========================================================================
     # 小时聚合样本操作
@@ -266,6 +301,105 @@ class Database:
                 ORDER BY ts ASC
             """, (server_id, from_ts, to_ts))
             return [{"ts": row["ts"], "value": row["value"]} for row in cursor.fetchall()]
+    
+    def query_hourly_history(
+        self,
+        server_ids: Optional[List[int]] = None,
+        from_ts: Optional[str] = None,
+        to_ts: Optional[str] = None,
+        limit: int = 20,
+        offset: int = 0,
+        sort_by: str = "ts",
+        sort_order: str = "desc"
+    ) -> tuple[List[Dict[str, Any]], int]:
+        """
+        查询历史数据（带分页和筛选）
+        
+        Args:
+            server_ids: 服务器 ID 列表（可选，为空则查询所有）
+            from_ts: 开始时间（ISO 8601，可选）
+            to_ts: 结束时间（ISO 8601，可选）
+            limit: 每页条数（1-1000）
+            offset: 偏移量
+            sort_by: 排序字段（ts, cpu_pct_avg, cpu_pct_max, disk_used_pct, gpu_util_pct_avg, gpu_util_pct_max, server_name）
+            sort_order: 排序方向（asc, desc）
+        
+        Returns:
+            (数据列表, 总数)
+        """
+        # 参数校验
+        limit = max(1, min(limit, 1000))  # 限制在 1-1000 范围
+        offset = max(0, offset)
+        
+        # 构建查询条件
+        where_clauses = []
+        params = []
+        
+        if server_ids:
+            placeholders = ",".join("?" * len(server_ids))
+            where_clauses.append(f"sh.server_id IN ({placeholders})")
+            params.extend(server_ids)
+        
+        if from_ts:
+            where_clauses.append("sh.ts >= ?")
+            params.append(from_ts)
+        
+        if to_ts:
+            where_clauses.append("sh.ts <= ?")
+            params.append(to_ts)
+        
+        where_clause = "WHERE " + " AND ".join(where_clauses) if where_clauses else ""
+        
+        # 排序字段映射（防止SQL注入）
+        valid_sort_fields = {
+            "ts": "sh.ts",
+            "cpu_pct_avg": "sh.cpu_pct_avg",
+            "cpu_pct_max": "sh.cpu_pct_max",
+            "disk_used_pct": "sh.disk_used_pct",
+            "gpu_util_pct_avg": "sh.gpu_util_pct_avg",
+            "gpu_util_pct_max": "sh.gpu_util_pct_max",
+            "server_name": "s.name"
+        }
+        
+        sort_column = valid_sort_fields.get(sort_by, "sh.ts")
+        sort_direction = "ASC" if sort_order.lower() == "asc" else "DESC"
+        
+        with self.get_conn() as conn:
+            # 查询总数
+            count_sql = f"""
+                SELECT COUNT(*) as total
+                FROM samples_hourly sh
+                JOIN servers s ON sh.server_id = s.id
+                {where_clause}
+            """
+            total = conn.execute(count_sql, params).fetchone()["total"]
+            
+            # 查询数据
+            data_sql = f"""
+                SELECT 
+                    sh.id,
+                    sh.server_id,
+                    s.name as server_name,
+                    sh.ts,
+                    sh.cpu_pct_avg,
+                    sh.cpu_pct_max,
+                    sh.disk_used_pct,
+                    sh.disk_used_bytes,
+                    sh.disk_total_bytes,
+                    sh.gpu_util_pct_avg,
+                    sh.gpu_util_pct_max,
+                    sh.gpu_mem_used_mb,
+                    sh.gpu_mem_total_mb
+                FROM samples_hourly sh
+                JOIN servers s ON sh.server_id = s.id
+                {where_clause}
+                ORDER BY {sort_column} {sort_direction}
+                LIMIT ? OFFSET ?
+            """
+            cursor = conn.execute(data_sql, params + [limit, offset])
+            data = [dict(row) for row in cursor.fetchall()]
+            
+            return data, total
     
     # =========================================================================
     # 事件操作

@@ -5,7 +5,7 @@
 """
 
 from datetime import datetime
-from typing import List, Optional, Dict
+from typing import List, Optional, Dict, Literal, Any
 
 from pydantic import BaseModel, Field
 
@@ -67,3 +67,21 @@ class HealthResponse(BaseModel):
         json_encoders = {
             datetime: lambda v: v.strftime("%Y-%m-%dT%H:%M:%SZ")
         }
+
+
+class ProxyStatusResponse(BaseModel):
+    """代理转发状态响应"""
+
+    status: Literal["disabled", "stopped", "connecting", "connected", "error"]
+    pid: Optional[int] = None
+    listen_port: Optional[int] = None
+    target: Optional[str] = None
+    last_error: Optional[str] = None
+    connected_since: Optional[str] = None
+    retry_count: int = 0
+
+
+class ProxyStartRequest(BaseModel):
+    """启动代理请求（可选携带配置覆盖）"""
+
+    config: Optional[Dict[str, Any]] = None

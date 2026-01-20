@@ -15,7 +15,8 @@ from ...config import get_config
 from ...database import Database
 from ...models import (
     ServerResponse, ServerCreate, ServerUpdate,
-    LatestSnapshot, ServiceCatalogItem, cache
+    LatestSnapshot, ServiceCatalogItem, cache,
+    ProxyConfig, ProxyStatus, ServerProxyResponse, ServerProxyUpdateRequest
 )
 from ..dependencies import get_database, verify_admin_token
 
@@ -223,3 +224,113 @@ async def discover_services(server_id: int, db: Database = Depends(get_database)
             status_code=status.HTTP_502_BAD_GATEWAY,
             detail=f"Failed to connect to agent: {e}"
         )
+
+
+def _parse_proxy_config(proxy_config_json: Optional[str]) -> Optional[ProxyConfig]:
+    if not proxy_config_json:
+        return None
+    try:
+        return ProxyConfig(**json.loads(proxy_config_json))
+    except Exception:
+        return None
+
+
+async def fetch_agent_proxy_status(server: dict) -> ProxyStatus:
+    config = get_config()
+    url = f"http://{server['host']}:{server['agent_port']}/v1/proxy/status"
+    headers = {"Authorization": f"Bearer {server['token']}"}
+    try:
+        async with httpx.AsyncClient(timeout=config.collector.timeout) as client:
+            resp = await client.get(url, headers=headers)
+            resp.raise_for_status()
+            data = resp.json()
+            if "status" not in data:
+                data["status"] = "unknown"
+            return ProxyStatus(**data)
+    except Exception as e:
+        return ProxyStatus(status="unknown", last_error=f"Failed to query agent: {e}")
+
+
+async def send_agent_proxy_action(server: dict, action: str, config_payload: Optional[ProxyConfig]) -> ProxyStatus:
+    config = get_config()
+    if action == "start":
+        url = f"http://{server['host']}:{server['agent_port']}/v1/proxy/start"
+        payload = {"config": config_payload.model_dump()} if config_payload else {}
+    elif action == "stop":
+        url = f"http://{server['host']}:{server['agent_port']}/v1/proxy/stop"
+        payload = {}
+    else:
+        raise ValueError(f"unsupported action: {action}")
+
+    headers = {"Authorization": f"Bearer {server['token']}"}
+    try:
+        async with httpx.AsyncClient(timeout=config.collector.timeout) as client:
+            resp = await client.post(url, headers=headers, json=payload)
+            resp.raise_for_status()
+            data = resp.json()
+            if "status" not in data:
+                data["status"] = "unknown"
+            return ProxyStatus(**data)
+    except httpx.HTTPStatusError as e:
+        detail = ""
+        try:
+            detail = e.response.text
+        except Exception:
+            detail = str(e)
+        raise HTTPException(status_code=status.HTTP_502_BAD_GATEWAY, detail=f"Agent error: {detail}")
+    except Exception as e:
+        raise HTTPException(status_code=status.HTTP_502_BAD_GATEWAY, detail=f"Failed to connect to agent: {e}")
+
+
+@router.get(
+    "/{server_id}/proxy",
+    response_model=ServerProxyResponse,
+    dependencies=[Depends(verify_admin_token)],
+)
+async def get_server_proxy(server_id: int, db: Database = Depends(get_database)):
+    """
+    获取代理转发配置 + 实时状态
+    """
+    server = db.get_server_by_id(server_id)
+    if not server:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f"Server {server_id} not found")
+
+    proxy_config = _parse_proxy_config(db.get_proxy_config(server_id))
+    proxy_status = await fetch_agent_proxy_status(server)
+    return ServerProxyResponse(config=proxy_config, status=proxy_status)
+
+
+@router.put(
+    "/{server_id}/proxy",
+    response_model=ServerProxyResponse,
+    dependencies=[Depends(verify_admin_token)],
+)
+async def update_server_proxy(
+    server_id: int,
+    data: ServerProxyUpdateRequest,
+    db: Database = Depends(get_database),
+):
+    """
+    保存代理转发配置，并按需触发 start/stop
+    """
+    server = db.get_server_by_id(server_id)
+    if not server:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f"Server {server_id} not found")
+
+    if data.config is not None:
+        if data.action == "start" and not data.config.enabled:
+            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Cannot start when proxy.enabled=false")
+        ok = db.set_proxy_config(server_id, data.config.model_dump_json())
+        if not ok:
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail="Failed to save proxy_config (missing column?). Run migration-v1.1.sql first.",
+            )
+
+    config_for_action = data.config or _parse_proxy_config(db.get_proxy_config(server_id))
+
+    if data.action:
+        await send_agent_proxy_action(server, data.action, config_for_action)
+
+    proxy_status = await fetch_agent_proxy_status(server)
+    return ServerProxyResponse(config=config_for_action, status=proxy_status)

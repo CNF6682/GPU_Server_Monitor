@@ -122,6 +122,44 @@ class APIClient {
     async getEvents(limit = 200) {
         return this.request(`/api/events?limit=${limit}`);
     }
+
+    // =========================================================================
+    // 历史数据 API
+    // =========================================================================
+
+    /**
+     * 获取按小时聚合的历史数据
+     * @param {URLSearchParams|Object} params - 查询参数
+     */
+    async getHourlyHistory(params) {
+        const qs = params instanceof URLSearchParams ? params.toString() : new URLSearchParams(params).toString();
+        return this.request(`/api/history/hourly?${qs}`);
+    }
+
+    // =========================================================================
+    // 代理转发 API
+    // =========================================================================
+
+    /**
+     * 获取代理配置和状态
+     * @param {number} serverId 
+     */
+    async getProxyConfig(serverId) {
+        return this.request(`/api/servers/${serverId}/proxy`);
+    }
+
+    /**
+     * 更新代理配置或控制代理状态
+     * @param {number} serverId 
+     * @param {Object} config - 代理配置对象
+     * @param {string|null} action - 'start' | 'stop' | null
+     */
+    async updateProxyConfig(serverId, config, action = null) {
+        return this.request(`/api/servers/${serverId}/proxy`, {
+            method: 'PUT',
+            body: JSON.stringify({ config, action }),
+        });
+    }
 }
 
 /**
