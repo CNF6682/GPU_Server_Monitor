@@ -1,6 +1,6 @@
 node_id: "local-node"
 listen: "0.0.0.0:9109"
-token: "test-token"
+token: "3JEuRC0EaiPJkaaEPtF6PiUGH7e2HXfw"
 disks:
   - "/"
 services_allowlist: []

@@ -21,9 +21,11 @@ class DiskInfo(BaseModel):
 class GPUInfo(BaseModel):
     """GPU 信息"""
     index: int = Field(..., description="GPU 索引")
+    name: str = Field(..., description="GPU 名称")
     util_pct: float = Field(..., description="GPU 使用率 (0-100)")
     mem_used_mb: int = Field(..., description="显存已使用 MB")
     mem_total_mb: int = Field(..., description="显存总量 MB")
+    temperature_c: Optional[float] = Field(None, description="GPU 温度 (摄氏度)")
 
 
 class ServiceInfo(BaseModel):

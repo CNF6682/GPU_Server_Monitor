@@ -30,13 +30,34 @@ services_allowlist: []
 gpu: "auto"
 
 # 代理转发配置（可选）
+# 通过 SSH 隧道将本地端口转发到中心节点代理服务
+# 使用场景：服务器需要通过中心节点的代理访问外网
 # proxy:
+#   # 是否启用代理转发
 #   enabled: true
+#
+#   # 本地监听端口（服务器上的代理端口）
 #   server_listen_port: 8080
+#
+#   # 中心节点代理端口（目标代理服务端口）
 #   center_proxy_port: 7879
+#
+#   # 中心节点 SSH 地址
 #   center_ssh_host: "192.168.1.100"
+#
+#   # 中心节点 SSH 端口（默认：22）
 #   center_ssh_port: 22
+#
+#   # SSH 用户名
 #   center_ssh_user: "dhga"
+#
+#   # SSH 私钥路径（必须使用密钥认证，不支持密码）
+#   # 生成密钥: ssh-keygen -t ed25519 -f ~/.ssh/id_ed25519_monitor -C "monitor-proxy"
+#   # 分发公钥: ssh-copy-id -i ~/.ssh/id_ed25519_monitor.pub user@center_host
 #   identity_file: "/home/monitor/.ssh/id_ed25519_monitor"
+#
+#   # 是否严格检查 host key（生产环境建议 true）
 #   strict_host_key_checking: true
+#
+#   # Agent 启动时是否自动启动代理（默认：false）
 #   auto_start: false
