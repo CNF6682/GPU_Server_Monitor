@@ -8,12 +8,16 @@
 - **多 GPU 兼容**：实时和历史均支持多卡。
 - **可选代理转发**：Agent 自建 SSH 隧道访问中心节点的本地代理端口。
 
+## 效果图
+![alt text](imgs/首页.png)
+![alt text](imgs/详情.png)
 ## 目录结构
 - `ops/monitor/aggregator/`：Windows 中心端（FastAPI + SQLite）
 - `ops/monitor/agent/`：Linux Agent（FastAPI）
 - `ops/monitor/frontend/`：静态 Dashboard
 - `ops/monitor/scripts/`：初始化/备份/健康检查/迁移等脚本
 - `docs/monitoring/`：方案、架构、升级与代理配置说明
+
 
 ## 环境依赖
 Windows（中心节点）：
