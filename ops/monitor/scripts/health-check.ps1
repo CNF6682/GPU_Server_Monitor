@@ -80,11 +80,12 @@ if ($service) {
     }
 } else {
     # 可能是 Python 进程直接运行
-    $pythonProc = Get-Process -Name "python*" -ErrorAction SilentlyContinue | 
-        Where-Object { $_.CommandLine -match "monitor_aggregator" }
+    $pythonProc = Get-CimInstance Win32_Process -ErrorAction SilentlyContinue |
+        Where-Object { ($_.Name -in @("python.exe", "pythonw.exe")) -and ($_.CommandLine -match "monitor_aggregator") }
     
     if ($pythonProc) {
-        Write-CheckResult -Name "Aggregator 进程" -Status "pass" -Message "进程运行中 (PID: $($pythonProc.Id))"
+        $pids = ($pythonProc | Select-Object -ExpandProperty ProcessId) -join ", "
+        Write-CheckResult -Name "Aggregator 进程" -Status "pass" -Message "进程运行中 (PID: $pids)"
     } else {
         Write-CheckResult -Name "Aggregator 服务" -Status "warn" -Message "未找到 NSSM 服务或 Python 进程"
     }
@@ -101,7 +102,7 @@ try {
     $response = Invoke-WebRequest -Uri "$ApiBaseUrl/api/servers" -TimeoutSec 5 -UseBasicParsing -ErrorAction Stop
     
     if ($response.StatusCode -eq 200) {
-        $servers = $response.Content | ConvertFrom-Json
+        $servers = @($response.Content | ConvertFrom-Json)
         Write-CheckResult -Name "API 端点 /api/servers" -Status "pass" -Message "响应正常，服务器数量: $($servers.Count)"
     } else {
         Write-CheckResult -Name "API 端点 /api/servers" -Status "fail" -Message "状态码: $($response.StatusCode)"
@@ -180,7 +181,7 @@ Write-Host "[4/5] Agent 连通性" -ForegroundColor Yellow
 
 try {
     $response = Invoke-WebRequest -Uri "$ApiBaseUrl/api/servers" -TimeoutSec 5 -UseBasicParsing -ErrorAction Stop
-    $servers = $response.Content | ConvertFrom-Json
+    $servers = @($response.Content | ConvertFrom-Json)
     
     if ($servers.Count -eq 0) {
         Write-CheckResult -Name "Agent 列表" -Status "warn" -Message "未配置任何服务器"

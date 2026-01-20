@@ -72,5 +72,4 @@ def create_app() -> FastAPI:
     return app
 
 
-# 默认应用实例
-app = create_app()
+__all__ = ["create_app"]
