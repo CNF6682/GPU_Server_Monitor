@@ -8,16 +8,19 @@ Write-Host "Stopping Monitor Aggregator..." -ForegroundColor Yellow
 
 # 1) Stop Windows service if installed
 $serviceName = "MonitorAggregator"
-try {
-    $svc = Get-Service -Name $serviceName -ErrorAction Stop
-    if ($svc.Status -eq "Running") {
-        Write-Host "Stopping service: $serviceName" -ForegroundColor Yellow
-        Stop-Service -Name $serviceName -Force:$Force -ErrorAction Stop
+$svc = Get-Service -Name $serviceName -ErrorAction SilentlyContinue
+if ($svc) {
+    if ($svc.Status -ne "Stopped") {
+        Write-Host "Stopping service: $serviceName ($($svc.Status))" -ForegroundColor Yellow
+        try {
+            Stop-Service -Name $serviceName -Force:$Force -ErrorAction Stop
+        } catch {
+            Write-Host "Failed to stop service: $serviceName ($($_.Exception.Message))" -ForegroundColor Red
+        }
+        Start-Sleep -Seconds 1
     } else {
         Write-Host "Service already stopped: $serviceName ($($svc.Status))" -ForegroundColor Gray
     }
-} catch {
-    Write-Host "Service not found: $serviceName" -ForegroundColor Gray
 }
 
 # 2) Stop stray python processes started manually

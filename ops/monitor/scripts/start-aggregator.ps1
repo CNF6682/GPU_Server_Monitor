@@ -4,6 +4,28 @@ param(
 
 $ErrorActionPreference = "Stop"
 
+$serviceName = "MonitorAggregator"
+
+$svc = Get-Service -Name $serviceName -ErrorAction SilentlyContinue
+if ($svc) {
+    if ($Restart) {
+        Write-Host "Restarting Windows service: $serviceName" -ForegroundColor Yellow
+        Restart-Service -Name $serviceName -ErrorAction Stop
+    } else {
+        if ($svc.Status -eq "Paused") {
+            Write-Host "Resuming Windows service: $serviceName" -ForegroundColor Yellow
+            Resume-Service -Name $serviceName -ErrorAction Stop
+        } elseif ($svc.Status -ne "Running") {
+            Write-Host "Starting Windows service: $serviceName" -ForegroundColor Yellow
+            Start-Service -Name $serviceName -ErrorAction Stop
+        } else {
+            Write-Host "Service already running: $serviceName" -ForegroundColor Green
+        }
+    }
+    Write-Host "OK. Check: http://localhost:8080" -ForegroundColor Green
+    exit 0
+}
+
 $ScriptDir = Split-Path -Parent $MyInvocation.MyCommand.Path
 $MonitorDir = Split-Path -Parent $ScriptDir             # ops/monitor
 $RepoRoot = Split-Path -Parent (Split-Path -Parent $MonitorDir)  # repo root

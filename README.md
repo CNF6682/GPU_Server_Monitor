@@ -71,6 +71,76 @@ cd ..\scripts
 
 健康巡检：`.\scripts\health-check.ps1 -Verbose`
 
+### （推荐）纳入 Windows 服务（NSSM），稳定自启
+> 需要以管理员 PowerShell 运行，并安装 NSSM（例：`winget install -e --id NSSM.NSSM`）。
+
+```powershell
+cd d:\dhga\server
+.\ops\svc\svc.ps1 install monitor-aggregator
+Start-Service MonitorAggregator
+Get-Service MonitorAggregator
+```
+
+安装为服务后，`ops/monitor/scripts/start-aggregator.ps1` / `stop-aggregator.ps1` 会优先操作服务，避免重复启动。
+
+#### 服务配置文件（便于迁移）
+本项目将 **Windows 服务配置**放在 `services/` 目录下：
+- `services/monitor-aggregator/service.json`：Aggregator（API + 定时任务 + Dashboard）
+- `services/monitor-frontend/service.json`：可选的纯静态前端（本项目默认 Aggregator 也会托管前端，因此通常不必单独装）
+
+`services/monitor-aggregator/service.json` 的关键字段：
+- `exe` / `args`：启动命令（通过 PowerShell 调用 `ops/monitor/scripts/run-aggregator.ps1` 前台运行，便于 NSSM 监管与自动重启）
+- `workDir`：工作目录（默认 `d:\\dhga\\server`）
+- `stdout` / `stderr`：服务标准输出/错误输出落盘位置（排查启动失败最有用）
+- `env.MONITOR_CONFIG_PATH`：Aggregator 配置文件路径（默认 `d:\\dhga\\server\\ops\\monitor\\config.yaml`）
+- `restart.*`：NSSM 自动重启策略（默认 5 秒重启一次）
+
+迁移到另一台机器/另一条路径时，通常需要同步调整：
+- `services/monitor-aggregator/service.json` 里的 `args`、`workDir`、`stdout`、`stderr`、`env.MONITOR_CONFIG_PATH`
+- 确保 `ops/monitor/aggregator/.venv` 已创建并安装依赖（见上面的 venv 安装步骤）
+
+#### 安装 / 卸载 / 重装（管理员）
+```powershell
+cd d:\dhga\server
+
+# 查看有哪些服务定义（按 services/ 目录名）
+.\ops\svc\svc.ps1 list
+
+# 安装（从 services/monitor-aggregator/service.json 读取）
+.\ops\svc\svc.ps1 install monitor-aggregator
+
+# 启动/停止/状态（服务名是 MonitorAggregator）
+Start-Service MonitorAggregator
+Stop-Service MonitorAggregator
+Get-Service MonitorAggregator
+
+# 卸载（注意这里传的是“服务名”，不是目录名）
+.\ops\svc\svc.ps1 uninstall MonitorAggregator
+```
+
+如果你是在 `cmd.exe` 里（提示符类似 `d:\dhga\server>`），可以这样调用：
+```bat
+powershell -NoProfile -ExecutionPolicy Bypass -Command "Start-Service MonitorAggregator"
+```
+
+#### 常见故障排查（服务启动失败/接口超时）
+1) 看服务日志：
+- 应用日志：`logs/monitor-aggregator/aggregator.log`
+- 服务 stdout/stderr：`logs/monitor-aggregator/stdout.log` / `logs/monitor-aggregator/stderr.log`
+
+2) 检查端口：
+```powershell
+Get-NetTCPConnection -LocalPort 8080 -ErrorAction SilentlyContinue
+```
+
+3) 如果服务状态卡在 `Paused`（常见于启动连续失败触发 NSSM throttle）：
+```powershell
+# 需要管理员
+nssm set MonitorAggregator AppThrottle 0
+nssm stop MonitorAggregator
+nssm start MonitorAggregator
+```
+
 ### 升级/迁移（v1.1）
 已执行 `scripts/migration-v1.1.sql` 添加代理与多 GPU 字段。如新环境需要，运行：
 ```powershell

@@ -1,0 +1,19 @@
+{
+  "name": "MonitorAggregator",
+  "displayName": "Monitor Aggregator (API + Scheduler + Dashboard)",
+  "description": "Monitor Aggregator service managed via NSSM. Runs FastAPI (uvicorn) + collector + hourly aggregation + cleanup.",
+  "exe": "C:\\\\Windows\\\\System32\\\\WindowsPowerShell\\\\v1.0\\\\powershell.exe",
+  "args": "-NoProfile -ExecutionPolicy Bypass -File \"D:\\\\dhga\\\\server\\\\ops\\\\monitor\\\\scripts\\\\run-aggregator.ps1\"",
+  "workDir": "D:\\\\dhga\\\\server",
+  "stdout": "D:\\\\dhga\\\\server\\\\logs\\\\monitor-aggregator\\\\stdout.log",
+  "stderr": "D:\\\\dhga\\\\server\\\\logs\\\\monitor-aggregator\\\\stderr.log",
+  "start": "auto",
+  "env": {
+    "MONITOR_CONFIG_PATH": "D:\\\\dhga\\\\server\\\\ops\\\\monitor\\\\config.yaml",
+    "PYTHONUNBUFFERED": "1"
+  },
+  "restart": {
+    "mode": "restart",
+    "delayMs": 5000
+  }
+}

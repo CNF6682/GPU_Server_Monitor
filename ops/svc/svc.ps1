@@ -64,6 +64,7 @@ function Get-ServiceDefinition([string]$serviceName) {
     Stderr      = [string]$json.stderr
     Env         = $json.env
     StartMode   = [string]$json.start
+    Restart     = $json.restart
   }
 }
 
@@ -84,6 +85,48 @@ function Ensure-Dir([string]$path) {
   if ($dir -and !(Test-Path $dir)) {
     New-Item -ItemType Directory -Path $dir | Out-Null
   }
+}
+
+function Set-NssmRestartPolicy([string]$serviceName, $restart) {
+  if ($null -eq $restart) { return }
+
+  $nssm = Get-NssmPath
+
+  # Supported formats:
+  # - true: enable restart with defaults
+  # - { mode: "restart"|"ignore"|"exit", delayMs: 5000 }
+  $mode = "Restart"
+  $delayMs = 5000
+
+  if ($restart -is [bool]) {
+    if (-not $restart) { return }
+  } else {
+    try {
+      $modeRaw = [string]$restart.mode
+      if ($modeRaw) {
+        switch ($modeRaw.ToLowerInvariant()) {
+          "restart" { $mode = "Restart" }
+          "ignore"  { $mode = "Ignore" }
+          "exit"    { $mode = "Exit" }
+          default { throw "Invalid restart.mode: $modeRaw" }
+        }
+      }
+
+      if ($restart.delayMs) {
+        $delayMs = [int]$restart.delayMs
+      }
+    } catch {
+      throw "Invalid 'restart' field in service.json. Expected true or an object with {mode, delayMs}."
+    }
+  }
+
+  # Restart on any exit by default.
+  & $nssm set $serviceName AppExit Default $mode | Out-Null
+  & $nssm set $serviceName AppRestartDelay $delayMs | Out-Null
+
+  # Avoid NSSM leaving the service in PAUSED state if the app exits quickly during startup.
+  # With AppExit=Restart, prefer to keep restarting instead of requiring a manual resume.
+  & $nssm set $serviceName AppThrottle 0 | Out-Null
 }
 
 function Install-One([string]$serviceName) {
@@ -124,6 +167,8 @@ function Install-One([string]$serviceName) {
       if ($k) { & $nssm set $def.Name "AppEnvironmentExtra" "$k=$v" | Out-Null }
     }
   }
+
+  Set-NssmRestartPolicy -serviceName $def.Name -restart $def.Restart
 
   if ($def.StartMode -eq 'auto') {
     & $nssm set $def.Name Start SERVICE_AUTO_START | Out-Null
